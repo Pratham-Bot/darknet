@@ -9,7 +9,7 @@ This repository contains the code for Darknet, an open-source neural network fra
  1. Clone the repository using the following command:
 
 ```ini
-   git clone https://github.com/Pratham-Bot/darknet
+   git clone https://github.com/Pratham-Bot/darknet.git
 
 ```
 2. Change your current directory to the cloned repository:
