@@ -1,4 +1,4 @@
-# Darknet Repository
+# Darknet 
 
 This repository contains the code for Darknet, an open-source neural network framework. Follow the steps below to clone the repository, build Darknet, download the weights, and run the object detector.
 
@@ -6,12 +6,8 @@ This repository contains the code for Darknet, an open-source neural network fra
 
 ### On Host 
 
- 1. Clone the repository using the following command:
+1. Clone this repository
 
-```ini
-   git clone https://github.com/Pratham-Bot/darknet.git
-
-```
 2. Change your current directory to the cloned repository:
 
 ```ini
@@ -20,9 +16,9 @@ This repository contains the code for Darknet, an open-source neural network fra
 ```
 
 3. Build Darknet by running the make command:
-    ```ini
-       make
-    ```
+```ini
+  make
+```
 
 4.  Download the weights for the YOLOv3 model using wget:
 
@@ -33,8 +29,8 @@ This repository contains the code for Darknet, an open-source neural network fra
 5. Run the object detector and benchmark by executing the following command:
 
  ```ini
-     ./darknet detect cfg/yolov3.cfg yolov3.weights data/dog.jpg
-  ``` 
+   ./darknet detect cfg/yolov3.cfg yolov3.weights data/dog.jpg
+``` 
 
 6. You will see some output like this:
 
