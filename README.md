@@ -61,19 +61,9 @@ sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 To cross compile the framework, make the following changes in MAKEFILE:
 
  ```ini
-  ifeq ($(USE_CPP), 1)
   CC=aarch64-linux-gnu-gcc
-  else
-  CC=aarch64-linux-gnu-gcc
-  endif    
-
+  CP=aarch64-linux-gnu-gcc
  ``` 
-
-And:
-
-```ini
-CPP=aarch64-linux-gnu-g++ -std=c++11
-```
 Now perform ```make``` using the following command:
 
 ```
