@@ -1,16 +1,10 @@
+#include <stdlib.h>
 #include <iostream>
 #include <GLES2/gl2.h>
 
 using namespace std;
 
-void matrix_addition(float **A, float **B, float **C, int m, int n) {
-
-  #ifdef HAVE_OPEN_GLES
-
-  // Create a GLSL program.
-  GLuint program = glCreateProgram();
-
-  // Load the vertex shader.
+void initializeShader(GLuint program) {
   const char *vertexShaderSource =
     "#version 300 es\n"
     "in vec2 position;\n"
@@ -21,78 +15,82 @@ void matrix_addition(float **A, float **B, float **C, int m, int n) {
   glShaderSource(program, 1, &vertexShaderSource, NULL);
   glCompileShader(program);
 
-  // Load the fragment shader.
   const char *fragmentShaderSource =
-      "precision mediump float;\n"
-      "uniform mat4 matrixA;\n"
-      "uniform mat4 matrixB;\n"
-      "out vec4 color;\n"
-      "void main() {\n"
-      "  color = matrixA + matrixB;\n"
-      "}\n";
+    "precision mediump float;\n"
+    "uniform mat4 matrix;\n"
+    "out vec4 color;\n"
+    "void main() {\n"
+    "  color = matrix;\n"
+    "}\n";
   glShaderSource(program, 1, &fragmentShaderSource, NULL);
   glCompileShader(program);
 
-  // Link the program.
   glLinkProgram(program);
-
-  // Get the location of the "matrixA" uniform.
-  GLint matrixALocation = glGetUniformLocation(program, "matrixA");
-
-  // Get the location of the "matrixB" uniform.
-  GLint matrixBLocation = glGetUniformLocation(program, "matrixB");
-
-  // Set the values of the uniforms.
-  glUniformMatrix4fv(matrixALocation, 1, GL_FALSE, A[0]);
-  glUniformMatrix4fv(matrixBLocation, 1, GL_FALSE, B[0]);
-
-  // Draw a quad.
-  glDrawArrays(GL_TRIANGLES, 0, 6);
-
-  // Read back the result from the framebuffer
-  GLfloat pixelData[m * n];
-  glReadPixels(0, 0, m, n, GL_RGBA, GL_FLOAT, pixelData);
-
-  // Store the result in matrix C
-  for (int i = 0; i < m; i++) {
-    for (int j = 0; j < n; j++) {
-      C[i][j] = pixelData[i * n + j];
-    }
-  }
-
-  // Clean up OpenGL resources
-  glDeleteProgram(program);
-  #endif
 }
 
-int main() {
-  int m = 3, n = 3;
-
-  float **A = new float *[m];
-  float **B = new float *[m];
-  float **C = new float *[m];
-
+void matrix_multiplication(float **A, float **B, float **C, int m, int n, int p) {
   for (int i = 0; i < m; i++) {
-    A[i] = new float[n];
-    B[i] = new float[n];
-    C[i] = new float[n];
-  }
-
-  // Initialize matrices A and B
-  for (int i = 0; i < m; i++) {
-    for (int j = 0; j < n; j++) {
-      A[i][j] = i * j;
-      B[i][j] = i + j;
+    for (int j = 0; j < p; j++) {
+      C[i][j] = 0;
+      for (int k = 0; k < n; k++) {
+        C[i][j] += A[i][k] * B[k][j];
+      }
     }
   }
+}
 
-  matrix_addition(A, B, C, m, n);
-
-  // Print matrix C
-  for (int i = 0; i < m; i++) {
-    for (int j = 0; j < n; j++) {
-      cout << C[i][j] << " ";
+void printMatrix(float **matrix, int rows, int cols) {
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < cols; j++) {
+      cout << matrix[i][j] << " ";
     }
     cout << "\n";
   }
+}
+
+int main() {
+  int m = 3, n = 3, p = 3;
+
+  float **A = (float **)malloc(sizeof(float *) * m);
+  for (int i = 0; i < m; i++) {
+    A[i] = (float *)malloc(sizeof(float) * n);
+  }
+
+  float **B = (float **)malloc(sizeof(float *) * n);
+  for (int i = 0; i < n; i++) {
+    B[i] = (float *)malloc(sizeof(float) * p);
+  }
+
+  float **C = (float **)malloc(sizeof(float *) * m);
+  for (int i = 0; i < m; i++) {
+    C[i] = (float *)malloc(sizeof(float) * p);
+  }
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < p; j++) {
+      A[i][j] = i * j;
+    }
+  }
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < p; j++) {
+      B[i][j] = i * j;
+    }
+  }
+
+  matrix_multiplication(A, B, C, m, n, p);
+  printMatrix(C, m, p);
+
+  #ifdef HAVE_OPEN_GLES
+  GLuint program = glCreateProgram();
+  initializeShader(program);
+
+  GLint matrixLocation = glGetUniformLocation(program, "matrix");
+
+  glUseProgram(program);
+  glUniformMatrix4fv(matrixLocation, 1, GL_FALSE, C[0]);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+  #endif
+
+  return 0;
 }
