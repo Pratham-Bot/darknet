@@ -102,4 +102,11 @@ void softmax_tree(float *input, int spatial, int batch, int stride, float temp, 
 void upsample_gpu(float *in, int w, int h, int c, int batch, int stride, int forward, float scale, float *out);
 
 #endif
+
+#ifdef HAVE_OPEN_GLES
+#include <GLES2/gl2.h>
+void initializeShader(GLuint program);
 #endif
+
+#endif
+
