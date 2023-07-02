@@ -7,6 +7,8 @@
 #include "gemm.h"
 #include <stdio.h>
 #include <time.h>
+#include <GLES2/gl2.h>
+
 
 #ifdef AI2
 #include "xnor_layer.h"
@@ -482,6 +484,26 @@ void forward_convolutional_layer(convolutional_layer l, network net)
 
     activate_array(l.output, l.outputs*l.batch, l.activation);
     if(l.binary || l.xnor) swap_binary(&l);
+
+// TO RUN ON GPU 
+// Define buffer IDs
+GLuint inputBufferID;
+GLuint weightBufferID;
+GLuint biasBufferID;
+GLuint outputBufferID;
+
+// Generate buffer objects
+glGenBuffers(1, &inputBufferID);
+glGenBuffers(1, &weightBufferID);
+glGenBuffers(1, &biasBufferID);
+glGenBuffers(1, &outputBufferID);
+
+// Bind buffer objects to appropriate targets
+glBindBuffer(GL_ARRAY_BUFFER, inputBufferID);
+glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
+glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
+glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
+
 }
 
 void backward_convolutional_layer(convolutional_layer l, network net)

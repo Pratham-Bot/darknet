@@ -132,6 +132,7 @@ static void BM_GPU_MatrixMultiplication(benchmark::State &state) {
     glReadPixels(0, 0, 1, 1, GL_RGBA, GL_FLOAT, C); // Read the result from the GPU
   }
 
+
 }
 
 int main(int argc, char **argv) {
