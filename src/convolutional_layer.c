@@ -180,7 +180,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     int i;
     convolutional_layer l = {0};
     l.type = CONVOLUTIONAL;
-
+    
     l.groups = groups;
     l.h = h;
     l.w = w;
@@ -202,6 +202,11 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
     l.nweights = c/groups*n*size*size;
     l.nbiases = n;
+
+    l.inputBufferID = 0;
+    l.weightsBufferID = 0;
+    l.biasesBufferID = 0;
+    l.outputBufferID = 0;
 
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c/l.groups));
@@ -486,23 +491,37 @@ void forward_convolutional_layer(convolutional_layer l, network net)
     if(l.binary || l.xnor) swap_binary(&l);
 
 // TO RUN ON GPU 
-// Define buffer IDs
-GLuint inputBufferID;
-GLuint weightBufferID;
-GLuint biasBufferID;
-GLuint outputBufferID;
-
-// Generate buffer objects
+// // Generate buffer objects
 glGenBuffers(1, &inputBufferID);
 glGenBuffers(1, &weightBufferID);
 glGenBuffers(1, &biasBufferID);
 glGenBuffers(1, &outputBufferID);
 
-// Bind buffer objects to appropriate targets
+// // Bind buffer objects to appropriate targets
 glBindBuffer(GL_ARRAY_BUFFER, inputBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
+
+// // Calculate size of buffer
+
+// // Calculate the size of the input buffer
+GLsizei inputSize = sizeof(float) * l.c * l.h * l.w * l.batch;
+
+// // Calculate the size of the weights buffer
+GLsizei weightsSize = sizeof(float) * l.n * l.c * l.size * l.size / l.groups;
+
+// // Calculate the size of the biases buffer
+GLsizei biasesSize = sizeof(float) * l.n;
+
+// // Calculate the size of the output buffer
+GLsizei outputSize = sizeof(float) * l.out_w * l.out_h * l.n * l.batch;
+
+// // Allocate memory for each buffer with the calculated sizes.
+glBufferData(GL_ARRAY_BUFFER, inputSize, NULL, GL_STATIC_DRAW);
+glBufferData(GL_ARRAY_BUFFER, weightsSize, NULL, GL_STATIC_DRAW);
+glBufferData(GL_ARRAY_BUFFER, biasesSize, NULL, GL_STATIC_DRAW);
+glBufferData(GL_ARRAY_BUFFER, outputSize, NULL, GL_STATIC_DRAW);
 
 }
 

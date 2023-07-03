@@ -6,10 +6,14 @@
 #include "activations.h"
 #include "layer.h"
 #include "network.h"
+#include <GLES2/gl2.h>
 
 typedef layer convolutional_layer;
 
 #ifdef GPU
+
+
+
 void forward_convolutional_layer_gpu(convolutional_layer layer, network net);
 void backward_convolutional_layer_gpu(convolutional_layer layer, network net);
 void update_convolutional_layer_gpu(convolutional_layer layer, update_args a);
@@ -45,6 +49,13 @@ image get_convolutional_weight(convolutional_layer layer, int i);
 
 int convolutional_out_height(convolutional_layer layer);
 int convolutional_out_width(convolutional_layer layer);
+
+typedef struct{
+    GLuint l.inputBufferID;
+    GLuint l.weightsBufferID;
+    GLuint l.biasesBufferID;
+    GLuint l.outputBufferID;
+}convolutional_layer;
 
 #endif
 
