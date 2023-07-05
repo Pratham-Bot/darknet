@@ -491,7 +491,7 @@ void forward_convolutional_layer(convolutional_layer l, network net)
     if(l.binary || l.xnor) swap_binary(&l);
 
 // TO RUN ON GPU 
-// // Generate buffer objects
+// Generate buffer objects
 glGenBuffers(1, &inputBufferID);
 glGenBuffers(1, &weightBufferID);
 glGenBuffers(1, &biasBufferID);

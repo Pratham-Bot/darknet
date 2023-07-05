@@ -50,12 +50,12 @@ image get_convolutional_weight(convolutional_layer layer, int i);
 int convolutional_out_height(convolutional_layer layer);
 int convolutional_out_width(convolutional_layer layer);
 
-typedef struct{
-    GLuint l.inputBufferID;
-    GLuint l.weightsBufferID;
-    GLuint l.biasesBufferID;
-    GLuint l.outputBufferID;
-}convolutional_layer;
+struct convolution_layer{
+    GLuint inputBufferID;
+    GLuint weightsBufferID;
+    GLuint biasesBufferID;
+    GLuint outputBufferID;
+}
 
 #endif
 
