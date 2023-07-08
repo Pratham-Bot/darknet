@@ -55,7 +55,7 @@ struct convolution_layer{
     GLuint weightsBufferID;
     GLuint biasesBufferID;
     GLuint outputBufferID;
-}
+};
 
 #endif
 

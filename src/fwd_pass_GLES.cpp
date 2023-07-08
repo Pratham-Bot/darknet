@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
 
 const char *vertexShaderSource =
       "#version 300 es\n"
@@ -64,5 +66,62 @@ GLuint createShaderProgram(const char* vertexShaderSource, const char* fragmentS
     return program;
 }
 
+int main() {
+    // Initialize GLFW
+    if (!glfwInit()) {
+        // Handle initialization failure
+        return -1;
+    }
 
+    // Create a GLFW window
+    GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL Window", nullptr, nullptr);
+    if (!window) {
+        // Handle window creation failure
+        glfwTerminate();
+        return -1;
+    }
 
+    // Make the OpenGL context current
+    glfwMakeContextCurrent(window);
+
+    // Initialize GLEW
+    GLenum glewError = glewInit();
+    if (glewError != GLEW_OK) {
+        // Handle GLEW initialization failure
+        glfwTerminate();
+        return -1;
+    }
+
+    // Check OpenGL version and capabilities
+    if (!GLEW_VERSION_2_0) {
+        // Handle unsupported OpenGL version
+        glfwTerminate();
+        return -1;
+    }
+
+    // Create and compile vertex shader
+    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexShaderSource);
+
+    // Create and compile fragment shader
+    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
+
+    // Create shader program and link shaders
+    GLuint shaderProgram = createShaderProgram(vertexShaderSource, fragmentShaderSource);
+
+    // Set uniforms and attributes for the shader program
+    GLint attributeLocation = glGetAttribLocation(shaderProgram, "attributeName");
+    GLint uniformLocation = glGetUniformLocation(shaderProgram, "uniformName");
+
+    // Use the shader program for rendering
+    glUseProgram(shaderProgram);
+
+    // Clean up
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    glDeleteProgram(shaderProgram);
+
+    // Terminate GLFW and OpenGL
+    glfwTerminate();
+
+    return 0;
+}
