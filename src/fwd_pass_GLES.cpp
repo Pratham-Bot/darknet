@@ -120,6 +120,8 @@ int main() {
     glDeleteShader(fragmentShader);
     glDeleteProgram(shaderProgram);
 
+    glDispatchCompute(1, 1, 1);
+
     // Terminate GLFW and OpenGL
     glfwTerminate();
 

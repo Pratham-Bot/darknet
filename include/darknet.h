@@ -333,7 +333,7 @@ struct layer{
 
 #ifdef GPU
     int *indexes_gpu;
-
+    int *inputBufferID;
     float *z_gpu;
     float *r_gpu;
     float *h_gpu;
