@@ -178,6 +178,11 @@ struct layer{
     int *mask;
     int total;
 
+    int inputBufferID;
+    int weightsBufferID;
+    int biasesBufferID;
+    int outputBufferID;
+    
     float alpha;
     float beta;
     float kappa;
@@ -802,4 +807,10 @@ float rand_uniform(float min, float max);
 #ifdef __cplusplus
 }
 #endif
+#endif
+
+#ifdef HAVE_OPEN_GLES
+void fill_gpu(GLuint inputbufferID, size_t bufferSize, float fillValue) 
+
+
 #endif

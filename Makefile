@@ -4,6 +4,7 @@ OPENCV=0
 OPENMP=0
 DEBUG=0
 RELEASE=1
+HAVE_OPEN_GLES=1
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \
@@ -28,7 +29,11 @@ ARFLAGS=rcs
 OPTS=-Ofast
 LDFLAGS= -lm -pthread 
 COMMON= -Iinclude/ -Isrc/
-CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC
+CFLAGS=-Wall -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors -fPIC -DHAVE_OPEN_GLES
+
+ifeq ($(HAVE_OPEN_GLES), 1) 
+LDFLAGS+= -lGLESv2 
+endif
 
 ifeq ($(OPENMP), 1) 
 CFLAGS+= -fopenmp

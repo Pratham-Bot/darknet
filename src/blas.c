@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <GLES2/gl2.h>
+#include <typeinfo>
+
+
 void reorg_cpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out)
 {
     int b,i,j,k;
@@ -348,4 +352,27 @@ void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int for
     }
 }
 
+void fill_gpu(GLuint inputbufferID, size_t bufferSize, float fillValue) {
+    glBindBuffer(GL_ARRAY_BUFFER, bufferID); // Bind the GPU buffer
+
+    // Allocate temporary CPU buffer
+    //float* tempBuffer = new float[bufferSize];
+
+    // Map the GPU buffer to CPU memory
+    float* gpuBufferPtr = static_cast<float*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, bufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+
+    // Fill the temporary CPU buffer with the fill value
+    for (size_t i = 0; i < bufferSize; ++i) {
+        tempBuffer[i] = fillValue;
+    }
+
+    // Copy the CPU buffer to the GPU buffer
+    memcpy(gpuBufferPtr, tempBuffer, bufferSize);
+
+    // Unmap the buffer to release the mapped memory
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+
+    // Delete the temporary CPU buffer
+    delete[] tempBuffer;
+}
 
