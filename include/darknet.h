@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+// #include <GL/gl.h>
+// #include <GLES2/gl2.h>
+// #include <EGL/egl.h>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #ifdef GPU
     #define BLOCK 512
@@ -805,12 +810,11 @@ float rand_normal();
 float rand_uniform(float min, float max);
 
 #ifdef __cplusplus
+#ifdef HAVE_OPEN_GLES
+void fill_gpu(GLuint inputbufferID, size_t bufferSize, float fillValue) 
+
+#endif
 }
 #endif
 #endif
 
-#ifdef HAVE_OPEN_GLES
-void fill_gpu(GLuint inputbufferID, size_t bufferSize, float fillValue) 
-
-
-#endif

@@ -490,6 +490,8 @@ void forward_convolutional_layer(convolutional_layer l, network net)
     activate_array(l.output, l.outputs*l.batch, l.activation);
     if(l.binary || l.xnor) swap_binary(&l);
 
+#ifdef HAVE_OPEN_GLES
+
 // TO RUN ON GPU 
 // Generate buffer objects
 glGenBuffers(1, &inputBufferID);
@@ -522,7 +524,9 @@ glBufferData(GL_ARRAY_BUFFER, inputSize, NULL, GL_STATIC_DRAW);
 glBufferData(GL_ARRAY_BUFFER, weightsSize, NULL, GL_STATIC_DRAW);
 glBufferData(GL_ARRAY_BUFFER, biasesSize, NULL, GL_STATIC_DRAW);
 glBufferData(GL_ARRAY_BUFFER, outputSize, NULL, GL_STATIC_DRAW);
+glBufferData(GL_ARRAY_BUFFER, imageSize * sizeof(float), data_im, GL_STATIC_DRAW);
 
+#endif
 }
 
 void backward_convolutional_layer(convolutional_layer l, network net)

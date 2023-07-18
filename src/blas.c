@@ -353,7 +353,7 @@ void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int for
 }
 
 void fill_gpu(GLuint inputbufferID, size_t bufferSize, float fillValue) {
-    glBindBuffer(GL_ARRAY_BUFFER, bufferID); // Bind the GPU buffer
+    glBindBuffer(GL_ARRAY_BUFFER, inputbufferID); // Bind the GPU buffer
 
     // Allocate temporary CPU buffer
     //float* tempBuffer = new float[bufferSize];
