@@ -494,6 +494,12 @@ void forward_convolutional_layer(convolutional_layer l, network net)
 
 // TO RUN ON GPU 
 // Generate buffer objects
+
+GLuint inputBufferID;
+GLuint weightBufferID;
+GLuint biasBufferID;
+GLuint outputBufferID;
+
 glGenBuffers(1, &inputBufferID);
 glGenBuffers(1, &weightBufferID);
 glGenBuffers(1, &biasBufferID);
@@ -524,7 +530,59 @@ glBufferData(GL_ARRAY_BUFFER, inputSize, NULL, GL_STATIC_DRAW);
 glBufferData(GL_ARRAY_BUFFER, weightsSize, NULL, GL_STATIC_DRAW);
 glBufferData(GL_ARRAY_BUFFER, biasesSize, NULL, GL_STATIC_DRAW);
 glBufferData(GL_ARRAY_BUFFER, outputSize, NULL, GL_STATIC_DRAW);
-glBufferData(GL_ARRAY_BUFFER, imageSize * sizeof(float), data_im, GL_STATIC_DRAW);
+//glBufferData(GL_ARRAY_BUFFER, imageSize * sizeof(float), data_im, GL_STATIC_DRAW);
+
+// Create and compile the compute shader code for the activation operation
+const char* computeShaderSource = 
+     "#version 310 es\n"
+    "precision highp float;\n"
+    "uniform float alpha;\n"
+    "uniform float beta;\n"
+    "uniform int n;\n"
+    "layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;\n"
+    "buffer X {\n"
+    "    float x[];\n"
+    "} inputBuffer;\n"
+    "buffer Output {\n"
+    "    float output[];\n"
+    "} outputBuffer;\n"
+    "void main() {\n"
+    "    int idx = int(gl_GlobalInvocationID.x);\n"
+    "    if (idx < n) {\n"
+    "        float value = inputBuffer.x[idx];\n"
+    "        value = alpha * value + beta;\n"
+    "        value = max(value, 0.0); // Replace with your activation function\n"
+    "        outputBuffer.output[idx] = value;\n"
+    "    }\n"
+    "}\n";
+
+// Compile and create the compute shader program
+GLuint computeShader = compileShader(GL_COMPUTE_SHADER, computeShaderSource);
+GLuint computeProgram = createShaderProgram(computeShader);
+
+// Bind the shader program with the compute shader
+glUseProgram(computeProgram);
+
+// Set the appropriate buffer bindings, uniforms, and buffer layouts
+glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID);
+glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, outputBufferID);
+glUniform1f(glGetUniformLocation(computeProgram, "alpha"), 1.0f); // Replace with appropriate values
+glUniform1f(glGetUniformLocation(computeProgram, "beta"), 0.0f);
+glUniform1i(glGetUniformLocation(computeProgram, "n"), n); // 'n' is the size of the array
+
+// Execute the shader program using OpenGL ES commands
+glDispatchCompute(n / 64 + 1, 1, 1); // Use appropriate workgroup sizes based on your GPU capabilities
+
+// Wait for the compute shader to finish before using the output
+glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+// Retrieve the result by downloading the output array 'output' from the GPU buffer back to CPU memory if needed
+
+// Cleanup
+glDeleteBuffers(1, &inputBufferID);
+glDeleteBuffers(1, &outputBufferID);
+glDeleteProgram(computeProgram);
+glDeleteShader(computeShader);
 
 #endif
 }

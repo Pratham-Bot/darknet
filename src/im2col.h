@@ -14,6 +14,3 @@ void im2col_gpu(float *im,
 #endif
 #endif
 
-#ifdef HAVE_OPEN_GLES
-void im2col_get_pixel(sampler2D inputTex, int row, int col, int channel);
-#endif
