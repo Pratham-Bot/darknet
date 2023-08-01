@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <GLES2/gl2.h>
-#include <typeinfo>
+//#include <typeinfo>
 
 
 void reorg_cpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out)
@@ -356,7 +356,7 @@ void fill_gpu(GLuint inputbufferID, size_t bufferSize, float fillValue) {
     glBindBuffer(GL_ARRAY_BUFFER, inputbufferID); // Bind the GPU buffer
 
     // Allocate temporary CPU buffer
-    //float* tempBuffer = new float[bufferSize];
+    float* tempBuffer = new float[bufferSize];
 
     // Map the GPU buffer to CPU memory
     float* gpuBufferPtr = static_cast<float*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, bufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));

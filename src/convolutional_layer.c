@@ -556,14 +556,17 @@ const char* computeShaderSource =
     "    }\n"
     "}\n";
 
+glShaderSource(computeShaderSource, 1, &computeShaderSource, NULL);
+
 // Compile and create the compute shader program
-GLuint computeShader = compileShader(GL_COMPUTE_SHADER, computeShaderSource);
+GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
 GLuint computeProgram = createShaderProgram(computeShader);
+glCompileShader(computeShader);
 
 // Bind the shader program with the compute shader
 glUseProgram(computeProgram);
 
-// Set the appropriate buffer bindings, uniforms, and buffer layouts
+// Set the appropriate buffer bindings, uniformsGLuint computeShader, and buffer layouts
 glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID);
 glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, outputBufferID);
 glUniform1f(glGetUniformLocation(computeProgram, "alpha"), 1.0f); // Replace with appropriate values
@@ -571,12 +574,11 @@ glUniform1f(glGetUniformLocation(computeProgram, "beta"), 0.0f);
 glUniform1i(glGetUniformLocation(computeProgram, "n"), n); // 'n' is the size of the array
 
 // Execute the shader program using OpenGL ES commands
-glDispatchCompute(n / 64 + 1, 1, 1); // Use appropriate workgroup sizes based on your GPU capabilities
+glDispatchCompute(n / 64 + 1, 1, 1); 
 
 // Wait for the compute shader to finish before using the output
 glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-// Retrieve the result by downloading the output array 'output' from the GPU buffer back to CPU memory if needed
 
 // Cleanup
 glDeleteBuffers(1, &inputBufferID);

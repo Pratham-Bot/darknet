@@ -1,0 +1,60 @@
+// Compute shader source code for fill_gpu
+const char* computeShaderSource = R"(
+    #version 310 es
+    precision highp float;
+
+    uniform float fillValue;
+    uniform int bufferSize;
+
+    layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+    buffer OutputBuffer {
+        float output[];
+    };
+
+    void main() {
+        int idx = int(gl_GlobalInvocationID.x);
+        if (idx < bufferSize) {
+            output[idx] = fillValue;
+        }
+    }
+)";
+
+// Function to fill GPU buffer with a specified value
+void fill_gpu(GLuint bufferID, size_t bufferSize, float fillValue) {
+    // Create and compile the compute shader
+    GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
+    glShaderSource(computeShader, 1, &computeShaderSource, nullptr);
+    glCompileShader(computeShader);
+
+    // Create the compute shader program
+    GLuint computeProgram = glCreateProgram();
+    glAttachShader(computeProgram, computeShader);
+    glLinkProgram(computeProgram);
+
+    // Cleanup intermediate shader objects
+    glDeleteShader(computeShader);
+
+    // Use the compute shader program
+    glUseProgram(computeProgram);
+
+    // Set the fillValue uniform
+    GLint fillValueLoc = glGetUniformLocation(computeProgram, "fillValue");
+    glUniform1f(fillValueLoc, fillValue);
+
+    // Set the bufferSize uniform
+    GLint bufferSizeLoc = glGetUniformLocation(computeProgram, "bufferSize");
+    glUniform1i(bufferSizeLoc, bufferSize);
+
+    // Bind the output buffer
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, bufferID);
+
+    // Execute the compute shader
+    glDispatchCompute(bufferSize / 64 + 1, 1, 1);
+
+    // Synchronize the GPU
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    // Cleanup
+    glDeleteProgram(computeProgram);
+}

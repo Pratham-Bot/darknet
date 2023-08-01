@@ -1,0 +1,27 @@
+#version 460 es
+
+// Uniform for bias value
+uniform float biasValue;
+
+// Number of elements in the array
+uniform int n;
+
+// Compute shader layout
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+// Buffer for the input array
+buffer Input {
+    float data[];
+} inputBuffer;
+
+// Buffer for the output array
+buffer Output {
+    float data[];
+} outputBuffer;
+
+void main() {
+    int idx = int(gl_GlobalInvocationID.x);
+    if (idx < n) {
+        outputBuffer.data[idx] = inputBuffer.data[idx] + biasValue;
+    }
+}
