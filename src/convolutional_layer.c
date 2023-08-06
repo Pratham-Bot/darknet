@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <time.h>
 #include <GLES2/gl2.h>
+#include <GLES3/gl3.h>  // Include the OpenGL ES header
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 
 #ifdef AI2
@@ -505,86 +509,79 @@ glGenBuffers(1, &weightBufferID);
 glGenBuffers(1, &biasBufferID);
 glGenBuffers(1, &outputBufferID);
 
+char* vertexShaderSource = LoadShaderFromFile("shader/vertex_shader.glsl");
+char* fragmentShaderSource = LoadShaderFromFile("shader/fragment_shader.glsl");
+
+// Create and compile shaders
+GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+// Vertex Shader Compilation
+glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+glCompileShader(vertexShader);
+
+// Check for shader compilation errors
+GLint compileStatus;
+glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compileStatus);
+if (compileStatus != GL_TRUE) {
+    // Handle compilation error
+}
+
+
+// Fragment Shader Compilation
+glShaderSource(fragmentShader, 1, & fragmentShaderSource, NULL);
+glCompileShader(fragmentShader);
+
+// Check for shader compilation errors
+glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compileStatus);
+if (compileStatus != GL_TRUE) {
+    // Handle compilation error
+}
+
+// Create shader program and attach shaders
+GLuint shaderProgram = glCreateProgram();
+glAttachShader(shaderProgram, vertexShader);
+glAttachShader(shaderProgram, fragmentShader);
+
+// Link the program
+glLinkProgram(shaderProgram);
+
+// Check for program linking errors
+GLint linkStatus;
+glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatus);
+if (linkStatus != GL_TRUE) {
+    // Handle linking error
+}
+
+// Clean up shaders (no longer needed after linking)
+glDeleteShader(vertexShader);
+glDeleteShader(fragmentShader);
+
+
 // // Bind buffer objects to appropriate targets
 glBindBuffer(GL_ARRAY_BUFFER, inputBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
 
-// // Calculate size of buffer
 
-// // Calculate the size of the input buffer
-GLsizei inputSize = sizeof(float) * l.c * l.h * l.w * l.batch;
+// Calculate the size of the input buffer
+GLsizei inputBufferID = sizeof(float) * l.c * l.h * l.w * l.batch;
 
 // // Calculate the size of the weights buffer
-GLsizei weightsSize = sizeof(float) * l.n * l.c * l.size * l.size / l.groups;
+GLsizei weightBufferID = sizeof(float) * l.n * l.c * l.size * l.size / l.groups;
 
 // // Calculate the size of the biases buffer
-GLsizei biasesSize = sizeof(float) * l.n;
+GLsizei biasBufferID = sizeof(float) * l.n;
 
 // // Calculate the size of the output buffer
-GLsizei outputSize = sizeof(float) * l.out_w * l.out_h * l.n * l.batch;
+GLsizei outputBufferID = sizeof(float) * l.out_w * l.out_h * l.n * l.batch;
 
 // // Allocate memory for each buffer with the calculated sizes.
-glBufferData(GL_ARRAY_BUFFER, inputSize, NULL, GL_STATIC_DRAW);
-glBufferData(GL_ARRAY_BUFFER, weightsSize, NULL, GL_STATIC_DRAW);
-glBufferData(GL_ARRAY_BUFFER, biasesSize, NULL, GL_STATIC_DRAW);
-glBufferData(GL_ARRAY_BUFFER, outputSize, NULL, GL_STATIC_DRAW);
-//glBufferData(GL_ARRAY_BUFFER, imageSize * sizeof(float), data_im, GL_STATIC_DRAW);
-
-// Create and compile the compute shader code for the activation operation
-const char* computeShaderSource = 
-     "#version 310 es\n"
-    "precision highp float;\n"
-    "uniform float alpha;\n"
-    "uniform float beta;\n"
-    "uniform int n;\n"
-    "layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;\n"
-    "buffer X {\n"
-    "    float x[];\n"
-    "} inputBuffer;\n"
-    "buffer Output {\n"
-    "    float output[];\n"
-    "} outputBuffer;\n"
-    "void main() {\n"
-    "    int idx = int(gl_GlobalInvocationID.x);\n"
-    "    if (idx < n) {\n"
-    "        float value = inputBuffer.x[idx];\n"
-    "        value = alpha * value + beta;\n"
-    "        value = max(value, 0.0); // Replace with your activation function\n"
-    "        outputBuffer.output[idx] = value;\n"
-    "    }\n"
-    "}\n";
-
-glShaderSource(computeShaderSource, 1, &computeShaderSource, NULL);
-
-// Compile and create the compute shader program
-GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
-GLuint computeProgram = createShaderProgram(computeShader);
-glCompileShader(computeShader);
-
-// Bind the shader program with the compute shader
-glUseProgram(computeProgram);
-
-// Set the appropriate buffer bindings, uniformsGLuint computeShader, and buffer layouts
-glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID);
-glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, outputBufferID);
-glUniform1f(glGetUniformLocation(computeProgram, "alpha"), 1.0f); // Replace with appropriate values
-glUniform1f(glGetUniformLocation(computeProgram, "beta"), 0.0f);
-glUniform1i(glGetUniformLocation(computeProgram, "n"), n); // 'n' is the size of the array
-
-// Execute the shader program using OpenGL ES commands
-glDispatchCompute(n / 64 + 1, 1, 1); 
-
-// Wait for the compute shader to finish before using the output
-glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-
-// Cleanup
-glDeleteBuffers(1, &inputBufferID);
-glDeleteBuffers(1, &outputBufferID);
-glDeleteProgram(computeProgram);
-glDeleteShader(computeShader);
+glBufferData(GL_ARRAY_BUFFER, inputBufferID, NULL, GL_STATIC_DRAW);
+glBufferData(GL_ARRAY_BUFFER, weightBufferID, NULL, GL_STATIC_DRAW);
+glBufferData(GL_ARRAY_BUFFER, biasBufferID, NULL, GL_STATIC_DRAW);
+glBufferData(GL_ARRAY_BUFFER, outputBufferID, NULL, GL_STATIC_DRAW);
 
 #endif
 }

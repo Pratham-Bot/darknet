@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "darknet.h": "c"
+        "darknet.h": "c",
+        "fstream": "c"
     }
 }
