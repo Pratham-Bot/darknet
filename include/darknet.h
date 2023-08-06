@@ -92,7 +92,8 @@ typedef enum {
     UPSAMPLE,
     LOGXENT,
     L2NORM,
-    BLANK
+    BLANK,
+    LAYER_1
 } LAYER_TYPE;
 
 typedef enum{
@@ -495,6 +496,7 @@ typedef struct network{
     int index;
     float *cost;
     float clip;
+
 
 #ifdef GPU
     float *input_gpu;

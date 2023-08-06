@@ -4,7 +4,7 @@ OPENCV=0
 OPENMP=0
 DEBUG=0
 RELEASE=1
-HAVE_OPEN_GLES=1
+HAVE_OPEN_GLES=0
 
 ARCH= -gencode arch=compute_30,code=sm_30 \
       -gencode arch=compute_35,code=sm_35 \

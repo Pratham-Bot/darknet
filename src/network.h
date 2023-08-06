@@ -25,5 +25,9 @@ void print_network(network *net);
 int resize_network(network *net, int w, int h);
 void calc_network_cost(network *net);
 
+
+
+
+
 #endif
 

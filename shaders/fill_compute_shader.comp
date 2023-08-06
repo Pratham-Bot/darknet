@@ -1,5 +1,4 @@
 // Compute shader source code for fill_gpu
-const char* computeShaderSource = R"(
     #version 310 es
     precision highp float;
 
@@ -18,7 +17,6 @@ const char* computeShaderSource = R"(
             output[idx] = fillValue;
         }
     }
-)";
 
 // Function to fill GPU buffer with a specified value
 void fill_gpu(GLuint bufferID, size_t bufferSize, float fillValue) {

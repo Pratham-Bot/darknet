@@ -525,6 +525,16 @@ GLint compileStatus;
 glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compileStatus);
 if (compileStatus != GL_TRUE) {
     // Handle compilation error
+    GLint infoLogLength;
+    glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &infoLogLength);
+    char* infoLog = (char*)malloc(infoLogLength);
+    glGetShaderInfoLog(vertexShader, infoLogLength, NULL, infoLog);
+    
+    // Print or log the error message
+    printf("Fragment shader compilation error:\n%s\n", infoLog);
+    
+    // Clean up
+    free(infoLog);
 }
 
 
@@ -536,6 +546,17 @@ glCompileShader(fragmentShader);
 glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compileStatus);
 if (compileStatus != GL_TRUE) {
     // Handle compilation error
+    GLint infoLogLength;
+    glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &infoLogLength);
+    char* infoLog = (char*)malloc(infoLogLength);
+    glGetShaderInfoLog(fragmentShader, infoLogLength, NULL, infoLog);
+    
+    // Print or log the error message
+    printf("Fragment shader compilation error:\n%s\n", infoLog);
+    
+    // Clean up
+    free(infoLog);
+
 }
 
 // Create shader program and attach shaders
@@ -551,6 +572,7 @@ GLint linkStatus;
 glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatus);
 if (linkStatus != GL_TRUE) {
     // Handle linking error
+    
 }
 
 // Clean up shaders (no longer needed after linking)
@@ -583,6 +605,59 @@ glBufferData(GL_ARRAY_BUFFER, weightBufferID, NULL, GL_STATIC_DRAW);
 glBufferData(GL_ARRAY_BUFFER, biasBufferID, NULL, GL_STATIC_DRAW);
 glBufferData(GL_ARRAY_BUFFER, outputBufferID, NULL, GL_STATIC_DRAW);
 
+// Bind your shader program
+glUseProgram(shaderProgram);
+
+// Dispatch compute shader workgroups
+GLuint numGroupsX = 
+GLuint numGroupsY = 
+GLuint numGroupsZ = 
+glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+
+// Synchronize the compute shader execution
+glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+// Retrieve data from GPU buffers
+GLfloat* inputData = (GLfloat*)malloc(inputBufferID); // Allocate memory for input data
+glBindBuffer(GL_SHADER_STORAGE_BUFFER, inputBufferID);
+GLfloat* inputBufferData = (GLfloat*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID, GL_MAP_READ_BIT);
+memcpy(inputData, inputBufferData, inputBufferID);
+glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+// Retrieve data from weight buffer
+float* weightBufferData = (float*)malloc(weightBufferID); // Allocate memory to hold the retrieved data
+glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
+glGetBufferSubData(GL_ARRAY_BUFFER, 0, weightBufferID, weightBufferData);
+
+// Retrieve data from bias buffer
+float* biasBufferData = (float*)malloc(biasBufferID); // Allocate memory to hold the retrieved data
+glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
+glGetBufferSubData(GL_ARRAY_BUFFER, 0, biasBufferID, biasBufferData);
+
+// Retrieve data from output buffer
+float* outputBufferData = (float*)malloc(outputBufferID); // Allocate memory to hold the retrieved data
+glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
+glGetBufferSubData(GL_ARRAY_BUFFER, 0, outputBufferID, outputBufferData);
+
+// Clean up: free the allocated memory
+free(weightBufferData);
+free(biasBufferData);
+free(outputBufferData);
+
+
+// Cleanup
+glUseProgram(0); // Unbind the shader program
+glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // Unbind any buffer
+glDeleteBuffers(1, &inputBufferID);
+glDeleteBuffers(1, &weightBufferID);
+glDeleteBuffers(1, &biasBufferID);
+glDeleteBuffers(1, &outputBufferID);
+glDeleteProgram(shaderProgram);
+
+free(inputData); // Free allocated memory
+free(weightBufferData);
+free(biasBufferData);
+free(outputBufferData);
 #endif
 }
 
