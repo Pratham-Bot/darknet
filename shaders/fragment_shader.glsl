@@ -1,5 +1,4 @@
-const char* fragmentShaderSource = R"(
-    #version 300 es
+    #version 460 es
     precision highp float;
     
     out vec4 fragColor;
@@ -8,4 +7,3 @@ const char* fragmentShaderSource = R"(
         // Output a red color
         fragColor = vec4(1.0, 0.0, 0.0, 1.0);
     }
-)";

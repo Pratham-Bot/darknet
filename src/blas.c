@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <GLES2/gl2.h>
-//#include <typeinfo>
+// #include <typeinfo>
 
 
 void reorg_cpu(float *x, int w, int h, int c, int batch, int stride, int forward, float *out)

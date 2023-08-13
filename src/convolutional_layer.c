@@ -8,11 +8,15 @@
 #include <stdio.h>
 #include <time.h>
 #include <GLES2/gl2.h>
-#include <GLES3/gl3.h>  // Include the OpenGL ES header
+#include <GLES3/gl3.h> 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+// #include <gemm_compute_shader.comp>
+// #include <im2col.comp>
+// #include <activation_compute_shader.comp>
+// #include <fill_compute_shader.comp>
+// #include <add_bias.comp>
 
 #ifdef AI2
 #include "xnor_layer.h"
@@ -207,10 +211,14 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     l.nweights = c/groups*n*size*size;
     l.nbiases = n;
 
-    l.inputBufferID = 0;
-    l.weightsBufferID = 0;
-    l.biasesBufferID = 0;
-    l.outputBufferID = 0;
+    GLuint totalWorkItems = w * h * c;
+    
+    #ifdef HAVE_OPEN_GLES
+    l.inputBufferID = sizeof(float) * l.c * l.h * l.w * l.batch;
+    l.weightsBufferID = sizeof(float) * l.n * l.c * l.size * l.size / l.groups;
+    l.biasesBufferID = sizeof(float) * l.n;
+    l.outputBufferID = sizeof(float) * l.out_w * l.out_h * l.n * l.batch;
+    #endif
 
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c/l.groups));
@@ -494,11 +502,10 @@ void forward_convolutional_layer(convolutional_layer l, network net)
     activate_array(l.output, l.outputs*l.batch, l.activation);
     if(l.binary || l.xnor) swap_binary(&l);
 
-#ifdef HAVE_OPEN_GLES
+}
 
-// TO RUN ON GPU 
-// Generate buffer objects
-
+void forward_convolutional_layer_opengl(convolutional_layer l, network net)
+{
 GLuint inputBufferID;
 GLuint weightBufferID;
 GLuint biasBufferID;
@@ -528,10 +535,10 @@ if (compileStatus != GL_TRUE) {
     GLint infoLogLength;
     glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &infoLogLength);
     char* infoLog = (char*)malloc(infoLogLength);
-    glGetShaderInfoLog(vertexShader, infoLogLength, NULL, infoLog);
+    glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
     
     // Print or log the error message
-    printf("Fragment shader compilation error:\n%s\n", infoLog);
+    printf("Vertex shader compilation error:\n%s\n", infoLog);
     
     // Clean up
     free(infoLog);
@@ -549,7 +556,7 @@ if (compileStatus != GL_TRUE) {
     GLint infoLogLength;
     glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &infoLogLength);
     char* infoLog = (char*)malloc(infoLogLength);
-    glGetShaderInfoLog(fragmentShader, infoLogLength, NULL, infoLog);
+    glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
     
     // Print or log the error message
     printf("Fragment shader compilation error:\n%s\n", infoLog);
@@ -573,6 +580,20 @@ glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatus);
 if (linkStatus != GL_TRUE) {
     // Handle linking error
     
+    GLint infoLogLength;
+    glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &infoLogLength);
+    char* infoLog = (char*)malloc(infoLogLength);
+    glGetProgramInfoLog(shaderProgram, infoLogLength, NULL, infoLog);
+
+    // Print or log the error message
+    printf("Shader program linking error:\n%s\n", infoLog);
+
+    // Clean up
+    free(infoLog);
+    
+    // You might want to delete the shader program and do further error handling
+    glDeleteProgram(shaderProgram);
+    
 }
 
 // Clean up shaders (no longer needed after linking)
@@ -586,19 +607,6 @@ glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
 
-
-// Calculate the size of the input buffer
-GLsizei inputBufferID = sizeof(float) * l.c * l.h * l.w * l.batch;
-
-// // Calculate the size of the weights buffer
-GLsizei weightBufferID = sizeof(float) * l.n * l.c * l.size * l.size / l.groups;
-
-// // Calculate the size of the biases buffer
-GLsizei biasBufferID = sizeof(float) * l.n;
-
-// // Calculate the size of the output buffer
-GLsizei outputBufferID = sizeof(float) * l.out_w * l.out_h * l.n * l.batch;
-
 // // Allocate memory for each buffer with the calculated sizes.
 glBufferData(GL_ARRAY_BUFFER, inputBufferID, NULL, GL_STATIC_DRAW);
 glBufferData(GL_ARRAY_BUFFER, weightBufferID, NULL, GL_STATIC_DRAW);
@@ -608,11 +616,13 @@ glBufferData(GL_ARRAY_BUFFER, outputBufferID, NULL, GL_STATIC_DRAW);
 // Bind your shader program
 glUseProgram(shaderProgram);
 
+
+
 // Dispatch compute shader workgroups
-GLuint numGroupsX = 
-GLuint numGroupsY = 
-GLuint numGroupsZ = 
-glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+// GLuint numGroupsX = 
+// GLuint numGroupsY = 
+// GLuint numGroupsZ = 
+// glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
 
 // Synchronize the compute shader execution
 glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -639,11 +649,6 @@ float* outputBufferData = (float*)malloc(outputBufferID); // Allocate memory to 
 glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
 glGetBufferSubData(GL_ARRAY_BUFFER, 0, outputBufferID, outputBufferData);
 
-// Clean up: free the allocated memory
-free(weightBufferData);
-free(biasBufferData);
-free(outputBufferData);
-
 
 // Cleanup
 glUseProgram(0); // Unbind the shader program
@@ -658,8 +663,9 @@ free(inputData); // Free allocated memory
 free(weightBufferData);
 free(biasBufferData);
 free(outputBufferData);
-#endif
+
 }
+
 
 void backward_convolutional_layer(convolutional_layer l, network net)
 {

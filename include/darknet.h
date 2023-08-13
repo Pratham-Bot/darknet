@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
-// #include <GL/gl.h>
-// #include <GLES2/gl2.h>
-// #include <EGL/egl.h>
+#include <GL/gl.h>
+#include <GLES2/gl2.h>
+#include <EGL/egl.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -189,6 +189,13 @@ struct layer{
     int biasesBufferID;
     int outputBufferID;
     
+    int poolSizeX;
+    int poolSizeY;
+    int inputWidth;
+    int inputHeight;
+    int outputWidth;
+    int outputHeight;
+
     float alpha;
     float beta;
     float kappa;
@@ -621,7 +628,65 @@ data resize_data(data orig, int w, int h);
 data *tile_data(data orig, int divs, int size);
 data select_data(data *orig, int *inds);
 
-void forward_network(network *net);
+void forward_network(network *net)
+{
+    
+    // Forward propagate through your custom layer
+    for (int i = 0; i < net->n; ++i) {
+        layer l = net->layers[i];
+        
+        if (l.type == LAYER_1) {
+            // Bind buffer objects to appropriate targets
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, l.inputBufferID);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, l.outputBufferID);
+            
+            // Load and compile the maxpool compute shader
+            GLuint maxpoolComputeShader = LoadAndCompileComputeShader("shader/maxpool_compute_shader.glsl");
+            
+            // Bind the maxpool compute shader program
+            glUseProgram(maxpoolComputeShader);
+            
+            // Set uniforms for maxpool (pool size, input width/height, etc.)
+            glUniform2f(glGetUniformLocation(maxpoolComputeShader, "poolSize"), l.poolSizeX, l.poolSizeY);
+            glUniform1i(glGetUniformLocation(maxpoolComputeShader, "inputWidth"), l.inputWidth);
+            glUniform1i(glGetUniformLocation(maxpoolComputeShader, "inputHeight"), l.inputHeight);
+            glUniform1i(glGetUniformLocation(maxpoolComputeShader, "outputWidth"), l.outputWidth);
+            glUniform1i(glGetUniformLocation(maxpoolComputeShader, "outputHeight"), l.outputHeight);
+            
+            // Dispatch maxpool compute shader workgroups
+            GLuint numGroupsX = l.outputWidth / 16; 
+            GLuint numGroupsY = l.outputHeight / 16;
+            GLuint numGroupsZ = 1;
+            glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+            
+            // Synchronize the compute shader execution
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+            
+            // Cleanup
+            glDeleteProgram(maxpoolComputeShader);
+        }
+         // Print layer information
+        printf("Layer %3d - %-6s %4d %2d x %2d / %2d ", i, l.type, l.n, l.size, l.size, l.stride);
+        printf("%4d x %4d x %4d -> %4d x %4d x %4d ", l.c, l.h, l.w, l.out_c, l.out_h, l.out_w);
+        printf("%.3f BFLOPs\n", l.n * l.out_h * l.out_w * l.size * l.size * l.c * 2);
+    }
+
+    // Run object detection on the output predictions
+    float *predictions = get_predictions(net->output); // You need to implement this function
+    int num_classes = get_num_classes(net); // You need to implement this function
+
+    // Calculate the total number of predictions
+    int num_predictions = calculate_num_predictions(net);
+
+    // Iterate through predictions and print detected objects
+    for (int i = 0; i < num_predictions; ++i) {
+        int class_id = get_class_id(predictions[i], num_classes);
+        float confidence = get_confidence(predictions[i], num_classes);
+        printf("%s: %.2f%%\n", get_class_name(class_id), confidence * 100);
+    }
+} 
+
+
 void backward_network(network *net);
 void update_network(network *net);
 
