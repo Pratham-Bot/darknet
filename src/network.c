@@ -32,6 +32,37 @@
 #include "parser.h"
 #include "data.h"
 
+int calculate_num_predictions(network *net) {
+    int total_predictions = 0;
+
+    for (int i = 0; i < net->n; ++i) {
+        layer l = net->layers[i];
+        
+        if (l.type == DETECTION) {
+            int classes = l.classes;
+            int num_boxes = l.side * l.side * l.n;
+            total_predictions += num_boxes * (4 + 1 + classes); // 4 coordinates + 1 objectness + classes
+        }
+    }
+
+    return total_predictions;
+}
+
+int get_class_id(float prediction, int num_classes) {
+    int max_index = 0;
+    float max_prob = prediction;
+    return max_index;
+}
+
+
+float get_confidence(float prediction, int num_classes) {
+    
+}
+
+const char* get_class_name(int class_id) {
+   
+}
+
 load_args get_base_args(network *net)
 {
     load_args args = {0};
