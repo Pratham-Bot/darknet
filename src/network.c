@@ -32,9 +32,10 @@
 #include "parser.h"
 #include "data.h"
 
-int calculate_num_predictions(network *net) {
-    int total_predictions = 0;
 
+int calculate_num_predictions(network *net) {
+    #ifdef HAVE_OPEN_GLES    
+    int total_predictions = 0;
     for (int i = 0; i < net->n; ++i) {
         layer l = net->layers[i];
         
@@ -44,23 +45,43 @@ int calculate_num_predictions(network *net) {
             total_predictions += num_boxes * (4 + 1 + classes); // 4 coordinates + 1 objectness + classes
         }
     }
-
+    #endif
     return total_predictions;
 }
 
 int get_class_id(float prediction, int num_classes) {
+    
+    #ifdef HAVE_OPEN_GLES
     int max_index = 0;
     float max_prob = prediction;
     return max_index;
+    #endif
 }
 
 
 float get_confidence(float prediction, int num_classes) {
-    
+    #ifdef HAVE_OPEN_GLES
+    float confidence = prediction;
+    #endif
+
 }
 
 const char* get_class_name(int class_id) {
-   
+    #ifdef HAVE_OPEN_GLES
+    // Map class ID to class name
+    static const char* class_names[] = {
+        "Class1",   // Class ID 0
+        "Class2",   // Class ID 1
+        "Class3",   // Class ID 2
+    };
+    
+    if (class_id >= 0 && class_id < sizeof(class_names) / sizeof(class_names[0])) {
+        return class_names[class_id];
+    } else {
+        return "Unknown Class";
+    }
+    #endif
+
 }
 
 load_args get_base_args(network *net)
