@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <GLES2/gl2.h>
 #include <GL/glew.h>
 #include <GL/gl.h>
-#include <GLES2/gl2.h>
 #include <EGL/egl.h>
 #include <GLFW/glfw3.h>
 

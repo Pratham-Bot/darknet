@@ -7,8 +7,9 @@
 #include "gemm.h"
 #include <stdio.h>
 #include <time.h>
+#include <GL/glew.h>
 #include <GLES2/gl2.h>
-#include <GLES3/gl3.h> 
+// #include <GLES3/gl3.h> 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -214,10 +215,12 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
     GLuint totalWorkItems = w * h * c;
     
     #ifdef HAVE_OPEN_GLES
+
     l.inputBufferID = sizeof(float) * l.c * l.h * l.w * l.batch;
     l.weightsBufferID = sizeof(float) * l.n * l.c * l.size * l.size / l.groups;
     l.biasesBufferID = sizeof(float) * l.n;
     l.outputBufferID = sizeof(float) * l.out_w * l.out_h * l.n * l.batch;
+    
     #endif
 
     // float scale = 1./sqrt(size*size*c);
@@ -504,12 +507,29 @@ void forward_convolutional_layer(convolutional_layer l, network net)
 
 }
 
+#ifdef HAVE_OPEN_GLES
+
+void init_glew() {
+    glewExperimental = GL_TRUE; // Needed for some versions of GLEW
+    if (glewInit() != GLEW_OK) {
+        fprintf(stderr, "Failed to initialize GLEW\n");
+        exit(-1);
+    }
+}
+#endif
+
+
+
+#ifdef HAVE_OPEN_GLES
+
 void forward_convolutional_layer_opengl(convolutional_layer l, network net)
 {
-GLuint inputBufferID;
-GLuint weightBufferID;
-GLuint biasBufferID;
-GLuint outputBufferID;
+    init_glew();
+
+    GLuint inputBufferID;
+    GLuint weightBufferID;
+    GLuint biasBufferID;
+    GLuint outputBufferID;
 
 glGenBuffers(1, &inputBufferID);
 glGenBuffers(1, &weightBufferID);
@@ -606,7 +626,7 @@ glBindBuffer(GL_ARRAY_BUFFER, inputBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
 glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
-
+                
 // // Allocate memory for each buffer with the calculated sizes.
 glBufferData(GL_ARRAY_BUFFER, inputBufferID, NULL, GL_STATIC_DRAW);
 glBufferData(GL_ARRAY_BUFFER, weightBufferID, NULL, GL_STATIC_DRAW);
@@ -615,14 +635,6 @@ glBufferData(GL_ARRAY_BUFFER, outputBufferID, NULL, GL_STATIC_DRAW);
 
 // Bind your shader program
 glUseProgram(shaderProgram);
-
-
-
-// Dispatch compute shader workgroups
-// GLuint numGroupsX = 
-// GLuint numGroupsY = 
-// GLuint numGroupsZ = 
-// glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
 
 // Synchronize the compute shader execution
 glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -665,7 +677,7 @@ free(biasBufferData);
 free(outputBufferData);
 
 }
-
+#endif
 
 void backward_convolutional_layer(convolutional_layer l, network net)
 {

@@ -1,21 +1,21 @@
-#version 460 es
+#version 460
 
 // Uniform for bias value
-uniform float biasValue;
+layout(set = 0, binding = 0) uniform float biasValue;
 
 // Number of elements in the array
-uniform int n;
+layout(set = 0, binding = 1) uniform int n;
 
 // Compute shader layout
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 // Buffer for the input array
-buffer Input {
+layout(set = 0, binding = 2) buffer InputBuffer {
     float data[];
 } inputBuffer;
 
 // Buffer for the output array
-buffer Output {
+layout(set = 0, binding = 3) buffer OutputBuffer {
     float data[];
 } outputBuffer;
 

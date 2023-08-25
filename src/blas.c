@@ -1,5 +1,5 @@
 #include "blas.h"
-
+#include <stdio.h>
 #include <math.h>
 #include <assert.h>
 #include <float.h>
@@ -352,27 +352,27 @@ void upsample_cpu(float *in, int w, int h, int c, int batch, int stride, int for
     }
 }
 
-void fill_gpu(GLuint inputbufferID, size_t bufferSize, float fillValue) {
-    glBindBuffer(GL_ARRAY_BUFFER, inputbufferID); // Bind the GPU buffer
+// void fill_gpu(GLuint inputbufferID, size_t bufferSize, float fillValue) {
+//     glBindBuffer(GL_ARRAY_BUFFER, inputbufferID); // Bind the GPU buffer
 
-    // Allocate temporary CPU buffer
-    float* tempBuffer = new float[bufferSize];
+//     // Allocate temporary CPU buffer
+//     float* tempBuffer = new float[bufferSize];
 
-    // Map the GPU buffer to CPU memory
-    float* gpuBufferPtr = static_cast<float*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, bufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+//     // Map the GPU buffer to CPU memory
+//     float* gpuBufferPtr = static_cast<float*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, bufferSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
 
-    // Fill the temporary CPU buffer with the fill value
-    for (size_t i = 0; i < bufferSize; ++i) {
-        tempBuffer[i] = fillValue;
-    }
+//     // Fill the temporary CPU buffer with the fill value
+//     for (size_t i = 0; i < bufferSize; ++i) {
+//         tempBuffer[i] = fillValue;
+//     }
 
-    // Copy the CPU buffer to the GPU buffer
-    memcpy(gpuBufferPtr, tempBuffer, bufferSize);
+//     // Copy the CPU buffer to the GPU buffer
+//     memcpy(gpuBufferPtr, tempBuffer, bufferSize);
 
-    // Unmap the buffer to release the mapped memory
-    glUnmapBuffer(GL_ARRAY_BUFFER);
+//     // Unmap the buffer to release the mapped memory
+//     glUnmapBuffer(GL_ARRAY_BUFFER);
 
-    // Delete the temporary CPU buffer
-    delete[] tempBuffer;
-}
+//     // Delete the temporary CPU buffer
+//     delete[] tempBuffer;
+// }
 

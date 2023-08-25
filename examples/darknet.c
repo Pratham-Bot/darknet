@@ -471,7 +471,11 @@ int main(int argc, char **argv)
     if(find_arg(argc, argv, "-nogpu")) {
         gpu_index = -1;
     }
+#ifdef HAVE_OPEN_GLES
 
+
+
+#endif  
 #ifndef GPU
     gpu_index = -1;
 #else

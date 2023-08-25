@@ -1,19 +1,19 @@
-#version 460 es
+#version 460 core
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 // Input buffer binding points
-layout(std140, binding = 0) buffer A {
+layout(std430, binding = 0) buffer A {
     float a[];
-} inputBufferA;
+};
 
-layout(std140, binding = 1) buffer B {
+layout(std430, binding = 1) buffer B {
     float b[];
-} inputBufferB;
+};
 
-layout(std140, binding = 2) buffer Output {
+layout(std430, binding = 2) buffer Output {
     float output[];
-} outputBuffer;
+};
 
 uniform int M; // Rows of A
 uniform int N; // Columns of B
@@ -28,8 +28,9 @@ void main() {
     for (int k = 0; k < K; ++k) {
         int aIndex = row * K + k;
         int bIndex = k * N + col;
-        value += inputBufferA.a[aIndex] * inputBufferB.b[bIndex];
+        value += a[aIndex] * b[bIndex];
     }
 
-    outputBuffer.output[row * N + col] = value;
+    output[row * N + col] = value;
 }
+
