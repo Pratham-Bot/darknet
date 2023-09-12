@@ -214,14 +214,12 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
 
     GLuint totalWorkItems = w * h * c;
     
-    #ifdef HAVE_OPEN_GLES
-
     l.inputBufferID = sizeof(float) * l.c * l.h * l.w * l.batch;
     l.weightsBufferID = sizeof(float) * l.n * l.c * l.size * l.size / l.groups;
     l.biasesBufferID = sizeof(float) * l.n;
     l.outputBufferID = sizeof(float) * l.out_w * l.out_h * l.n * l.batch;
     
-    #endif
+    
 
     // float scale = 1./sqrt(size*size*c);
     float scale = sqrt(2./(size*size*c/l.groups));
@@ -477,15 +475,15 @@ void forward_convolutional_layer(convolutional_layer l, network net)
         net.input = l.binary_input;
     }
 
-    int m = l.n/l.groups;
-    int k = l.size*l.size*l.c/l.groups;
-    int n = l.out_w*l.out_h;
-    for(i = 0; i < l.batch; ++i){
-        for(j = 0; j < l.groups; ++j){
-            float *a = l.weights + j*l.nweights/l.groups;
-            float *b = net.workspace;
-            float *c = l.output + (i*l.groups + j)*n*m;
-            float *im =  net.input + (i*l.groups + j)*l.c/l.groups*l.h*l.w;
+    int m = l.n/l.groups;                                                         // Number of filters per group 
+    int k = l.size*l.size*l.c/l.groups;                                           //calculates the size of the weight matrix for each group. 
+    int n = l.out_w*l.out_h;                                                      //calculates the number of output elements. It's the product of the width and height of the output feature map.
+    for(i = 0; i < l.batch; ++i){                                                 //iterated over batches
+        for(j = 0; j < l.groups; ++j){                                            //iterated over group of filters 
+            float *a = l.weights + j*l.nweights/l.groups;                         //sets the pointer a to the weights of the filters for the current group j.
+            float *b = net.workspace;                                             //sets the pointer b to the workspace in the neural network.
+            float *c = l.output + (i*l.groups + j)*n*m;                           //sets the pointer c to the output data for the current batch, group, and filter combination.
+            float *im =  net.input + (i*l.groups + j)*l.c/l.groups*l.h*l.w;       //line sets the pointer im to the input data for the current batch, group, and filter combination
 
             if (l.size == 1) {
                 b = im;
@@ -507,24 +505,10 @@ void forward_convolutional_layer(convolutional_layer l, network net)
 
 }
 
-#ifdef HAVE_OPEN_GLES
 
-void init_glew() {
-    glewExperimental = GL_TRUE; // Needed for some versions of GLEW
-    if (glewInit() != GLEW_OK) {
-        fprintf(stderr, "Failed to initialize GLEW\n");
-        exit(-1);
-    }
-}
-#endif
-
-
-
-#ifdef HAVE_OPEN_GLES
-
+        
 void forward_convolutional_layer_opengl(convolutional_layer l, network net)
-{
-    init_glew();
+{   
 
     GLuint inputBufferID;
     GLuint weightBufferID;
@@ -556,7 +540,7 @@ if (compileStatus != GL_TRUE) {
     glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &infoLogLength);
     char* infoLog = (char*)malloc(infoLogLength);
     glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-    
+
     // Print or log the error message
     printf("Vertex shader compilation error:\n%s\n", infoLog);
     
@@ -661,6 +645,11 @@ float* outputBufferData = (float*)malloc(outputBufferID); // Allocate memory to 
 glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
 glGetBufferSubData(GL_ARRAY_BUFFER, 0, outputBufferID, outputBufferData);
 
+// Bind buffer objects to appropriate binding points
+glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID);  // Binding point 0 for inputBuffer
+glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, weightBufferID); // Binding point 1 for weightBuffer
+glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, biasBufferID);   // Binding point 2 for biasBuffer
+glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, outputBufferID); // Binding point 3 for outputBuffer
 
 // Cleanup
 glUseProgram(0); // Unbind the shader program
@@ -677,7 +666,7 @@ free(biasBufferData);
 free(outputBufferData);
 
 }
-#endif
+
 
 void backward_convolutional_layer(convolutional_layer l, network net)
 {

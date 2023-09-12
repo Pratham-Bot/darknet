@@ -823,6 +823,7 @@ float rand_uniform(float min, float max);
 #ifdef __cplusplus
 #ifdef HAVE_OPEN_GLES
 void fill_gpu(GLuint inputbufferID, size_t bufferSize, float fillValue) 
+float* get_predictions(float* output);
 
 #endif
 }

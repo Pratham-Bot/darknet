@@ -24,7 +24,116 @@ extern void run_lsd(int argc, char **argv);
 
 #ifdef HAVE_OPEN_GLES
 
-void forward_network(network *net)
+
+// Define the get_predictions function
+float* get_predictions(float* output) {
+    int num_predictions = 5; // Number of predictions
+
+    // Allocate memory for the predictions
+    float* predictions = (float*)malloc(num_predictions * sizeof(float));
+    if (predictions == NULL) {
+        // Handle memory allocation error
+        fprintf(stderr, "Error: Failed to allocate memory for predictions.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Populate predictions with some sample values (replace with real logic)
+    for (int i = 0; i < num_predictions; i++) {
+        predictions[i] = 0.75 + (float)i * 0.1; // Placeholder values
+    }
+
+    return predictions;
+}
+
+int get_num_classes(network *net) {
+
+    int num_classes = 1;
+
+    return num_classes;
+}
+
+
+char* LoadShaderFromFile(const char* filePath) {
+    // Declare a file pointer
+    FILE* file = fopen(filePath, "r");
+    
+    if (file == NULL) {
+        // Handle the error if the file couldn't be opened
+        fprintf(stderr, "Failed to open shader file: %s\n", filePath);
+        return NULL;
+    }
+    
+    // Calculate the file size
+    fseek(file, 0, SEEK_END);
+    long fileSize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Allocate memory to store the shader source code
+    char* shaderSource = (char*)malloc(fileSize + 1);
+
+    if (shaderSource == NULL) {
+        // Handle memory allocation failure
+        fclose(file);
+        fprintf(stderr, "Failed to allocate memory for shader source code.\n");
+        return NULL;
+    }
+
+    // Read the shader source code from the file
+    size_t bytesRead = fread(shaderSource, 1, fileSize, file);
+    shaderSource[bytesRead] = '\0'; // Null-terminate the string
+
+    // Close the file
+    fclose(file);
+
+    return shaderSource;
+}
+
+GLuint LoadAndCompileComputeShader(const char* filePath) {
+    // Load the compute shader source code
+    char* shaderSource = LoadShaderFromFile(filePath);
+
+    if (shaderSource == NULL) {
+        // Handle shader loading failure
+        fprintf(stderr, "Failed to load compute shader: %s\n", filePath);
+        return 0;
+    }
+
+    // Create a shader object
+    GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
+
+    // Attach the shader source code to the shader object
+    glShaderSource(computeShader, 1, (const GLchar**)&shaderSource, NULL);
+
+    // Compile the shader
+    glCompileShader(computeShader);
+
+    // Check for shader compilation errors
+    GLint compileStatus;
+    glGetShaderiv(computeShader, GL_COMPILE_STATUS, &compileStatus);
+
+    if (compileStatus != GL_TRUE) {
+        // Handle compilation error
+        GLint infoLogLength;
+        glGetShaderiv(computeShader, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetShaderInfoLog(computeShader, infoLogLength, NULL, infoLog);
+
+        // Print or log the error message
+        fprintf(stderr, "Compute shader compilation error:\n%s\n", infoLog);
+
+        // Clean up
+        free(infoLog);
+        glDeleteShader(computeShader);
+        return 0;
+    }
+
+    // Clean up shader source code
+    free(shaderSource);
+
+    return computeShader;
+}
+
+void forward_network_opengl(network *net)
 {
     
     // Forward propagate through your custom layer
@@ -62,9 +171,9 @@ void forward_network(network *net)
             glDeleteProgram(maxpoolComputeShader);
         }
          // Print layer information
-        printf("Layer %3d - %-6s %4d %2d x %2d / %2d ", i, l.type, l.n, l.size, l.size, l.stride);
+        printf("Layer %3d - %-6s %4d %2d x %2d / %2d ", i, (char*)&l.type, l.n, l.size, l.size, l.stride);
         printf("%4d x %4d x %4d -> %4d x %4d x %4d ", l.c, l.h, l.w, l.out_c, l.out_h, l.out_w);
-        printf("%.3f BFLOPs\n", l.n * l.out_h * l.out_w * l.size * l.size * l.c * 2);
+        printf("%.3f BFLOPs\n", (double)(l.n * l.out_h * l.out_w * l.size * l.size * l.c * 2));
     }
 
     // Run object detection on the output predictions
@@ -81,6 +190,7 @@ void forward_network(network *net)
         printf("%s: %.2f%%\n", get_class_name(class_id), confidence * 100);
     }
 } 
+
 #endif
 
 void average(int argc, char *argv[])
