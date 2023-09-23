@@ -620,6 +620,10 @@ glBufferData(GL_ARRAY_BUFFER, outputBufferID, NULL, GL_STATIC_DRAW);
 // Bind your shader program
 glUseProgram(shaderProgram);
 
+char* shaderSource = LoadShaderFromFile("shader/convolution_shader.glsl");
+
+
+
 // Synchronize the compute shader execution
 glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
@@ -653,6 +657,10 @@ glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, outputBufferID); // Binding point 
 
 // Cleanup
 glUseProgram(0); // Unbind the shader program
+
+
+
+
 glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // Unbind any buffer
 glDeleteBuffers(1, &inputBufferID);
 glDeleteBuffers(1, &weightBufferID);
