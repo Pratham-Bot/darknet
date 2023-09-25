@@ -113,6 +113,117 @@ void forward_maxpool_layer(const maxpool_layer l, network net)
     }
 }
 
+void forward_maxpool_layer_opengl(const maxpool_layer l, network net) {  
+    
+    int poolSize = l.size;     
+    int stride = l.stride;     
+    int padding = l.pad;       
+
+    GLuint inputBufferID;
+    GLuint outputBufferID;
+
+    glGenBuffers(1, &inputBufferID);
+    glGenBuffers(1, &outputBufferID);
+
+    char* vertexShaderSource = LoadShaderFromFile("shader/vertex_shader.glsl");
+    char* fragmentShaderSource = LoadShaderFromFile("shader/fragment_shader.glsl");
+
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    GLint compileStatus;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compileStatus);
+    if (compileStatus != GL_TRUE) {
+        GLint infoLogLength;
+        glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        printf("Vertex shader compilation error:\n%s\n", infoLog);
+        free(infoLog);
+    }
+
+
+    glShaderSource(fragmentShader, 1, & fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compileStatus);
+    if (compileStatus != GL_TRUE){
+        GLint infoLogLength;
+        glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        printf("Fragment shader compilation error:\n%s\n", infoLog);
+        free(infoLog);
+
+    }
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    GLint linkStatus;
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatus);
+    if (linkStatus != GL_TRUE) {
+        
+        GLint infoLogLength;
+        glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetProgramInfoLog(shaderProgram, infoLogLength, NULL, infoLog);
+        printf("Shader program linking error:\n%s\n", infoLog);
+        free(infoLog);
+        
+        
+    }
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    glBindBuffer(GL_ARRAY_BUFFER, inputBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
+                    
+    glBufferData(GL_ARRAY_BUFFER, inputBufferID, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, outputBufferID, NULL, GL_STATIC_DRAW);
+
+    glUseProgram(shaderProgram);
+
+
+    char* computeShaderSource = LoadShaderFromFile("shader/maxpool_compute_shader.glsl");
+    GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
+    glShaderSource(computeShader, 1, &computeShaderSource, NULL);
+    glCompileShader(computeShader);
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, computeShader);
+    glLinkProgram(shaderProgram);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, outputBufferID);
+
+    glUniform1i(glGetUniformLocation(shaderProgram, "size"), l.size);
+    glUniform1i(glGetUniformLocation(shaderProgram, "stride"), l.stride);
+    glUniform1i(glGetUniformLocation(shaderProgram, "padding"), l.pad);
+
+    int workgroupSizeX = 32;  
+    int workgroupSizeY = 1;
+    int workgroupSizeZ = 1;
+    int numWorkgroupsX = (l.out_w + workgroupSizeX - 1) / workgroupSizeX;
+    int numWorkgroupsY = (l.out_h + workgroupSizeY - 1) / workgroupSizeY;
+    int numWorkgroupsZ = l.c;
+
+    glDispatchCompute(numWorkgroupsX, numWorkgroupsY, numWorkgroupsZ);
+    glUseProgram(0); // Unbind the shader program
+
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
+    glUseProgram(0);
+}
+
+
 void backward_maxpool_layer(const maxpool_layer l, network net)
 {
     int i;

@@ -1,54 +1,47 @@
-#version 310 es
-precision highp float;
+#version 460 es
 
-layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+// Define the workgroup size (adjust as needed)
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-// Buffer bindings and uniforms ...
-layout(binding = 0) buffer InputBuffer {
-    float input[];
-};
+// Input buffer (3D)
+layout(set = 0, binding = 0) buffer InputBuffer {
+    float input[]; // Input data format
+} inputBuffer;
 
-layout(binding = 1) buffer OutputBuffer {
-    float output[];
-};
+// Output buffer (3D)
+layout(set = 0, binding = 1) buffer OutputBuffer {
+    float output[]; // Output data format
+} outputBuffer;
 
-uniform vec2 poolSize;
+// Uniforms (constants)
 uniform int inputWidth;
 uniform int inputHeight;
-uniform int outputWidth;
-uniform int outputHeight;
-
-void apply_activation(inout float value) {
-    // Apply your activation function here
-     value = max(0.0, value);
-}
+uniform int inputChannels;
+uniform int poolSize;  // Pooling size (e.g., 2 for 2x2 pooling)
+uniform int stride;
 
 void main() {
-    int globalIdx = int(gl_GlobalInvocationID.x);
-    int globalIdy = int(gl_GlobalInvocationID.y);
-    
-    // Calculate output index
-    int outputIdx = globalIdy * outputWidth + globalIdx;
-    
-    // Calculate input indices based on maxpooling pool size
-    int startX = globalIdx * int(poolSize.x);
-    int startY = globalIdy * int(poolSize.y);
-    
-    // Initialize the max value
-    float maxValue = -INFINITY;
-    
-    // Iterate over the pool area and find the max value
-    for (int y = startY; y < startY + int(poolSize.y); ++y) {
-        for (int x = startX; x < startX + int(poolSize.x); ++x) {
-            int inputIdx = y * inputWidth + x;
-            maxValue = max(maxValue, input[inputIdx]);
+    ivec2 outputIndex = ivec2(gl_GlobalInvocationID.xy);
+
+    int inputX = outputIndex.x * stride;
+    int inputY = outputIndex.y * stride;
+
+    float maxVal = -3.402823466e+38; // Minimum representable negative value in IEEE 754
+
+    for (int i = 0; i < poolSize; ++i) {
+        for (int j = 0; j < poolSize; ++j) {
+            int inputPosX = inputX + i;
+            int inputPosY = inputY + j;
+
+            if (inputPosX >= 0 && inputPosX < inputWidth && inputPosY >= 0 && inputPosY < inputHeight) {
+                for (int c = 0; c < inputChannels; ++c) {
+                    int inputIndex = c + inputChannels * (inputPosX + inputWidth * inputPosY);
+                    maxVal = max(maxVal, inputBuffer.input[inputIndex]);
+                }
+            }
         }
     }
-    
-    // Apply bias and activation function
-    maxValue = maxValue + biasValue; 
-    apply_activation(maxValue);       
-    
-    // Store the result in the output buffer
-    output[outputIdx] = maxValue;
+
+    int outputIndexFlat = outputIndex.x + outputIndex.y * (inputWidth / stride);
+    outputBuffer.output[outputIndexFlat] = maxVal;
 }

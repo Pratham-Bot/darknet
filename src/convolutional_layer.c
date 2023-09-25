@@ -621,8 +621,34 @@ glBufferData(GL_ARRAY_BUFFER, outputBufferID, NULL, GL_STATIC_DRAW);
 glUseProgram(shaderProgram);
 
 char* shaderSource = LoadShaderFromFile("shader/convolution_shader.glsl");
+GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
+glShaderSource(computeShader, 1, &shaderSource, NULL);
+glCompileShader(computeShader);
 
+GLuint shaderProgram = glCreateProgram();
+glAttachShader(shaderProgram, computeShader);
+glLinkProgram(shaderProgram);
 
+//compute shader for activation
+char* activationShaderSource = LoadShaderFromFile("shader/activation_compute_shader.comp");
+GLuint activationShader = glCreateShader(GL_COMPUTE_SHADER);
+glShaderSource(activationShader, 1, &activationShaderSource, NULL);
+glCompileShader(activationShader);
+
+glUseProgram(activationShader);
+
+// Set uniform n to the number of output elements
+int n = l.outputs * l.batch;  // Assuming l.outputs represents the number of output elements
+glUniform1i(glGetUniformLocation(activationShader, "n"), n);
+
+// Bind the output buffer of the convolution as input to the activation shader
+glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, outputBufferID);
+
+// Bind the buffer where you want to store the activated values
+glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, outputBufferID);
+
+// Dispatch the activation shader
+glDispatchCompute((n + 63) / 64, 1, 1);
 
 // Synchronize the compute shader execution
 glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -658,9 +684,6 @@ glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, outputBufferID); // Binding point 
 // Cleanup
 glUseProgram(0); // Unbind the shader program
 
-
-
-
 glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // Unbind any buffer
 glDeleteBuffers(1, &inputBufferID);
 glDeleteBuffers(1, &weightBufferID);
@@ -668,10 +691,6 @@ glDeleteBuffers(1, &biasBufferID);
 glDeleteBuffers(1, &outputBufferID);
 glDeleteProgram(shaderProgram);
 
-free(inputData); // Free allocated memory
-free(weightBufferData);
-free(biasBufferData);
-free(outputBufferData);
 
 }
 
