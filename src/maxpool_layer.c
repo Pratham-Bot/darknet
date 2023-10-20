@@ -195,10 +195,6 @@ void forward_maxpool_layer_opengl(const maxpool_layer l, network net) {
     glShaderSource(computeShader, 1, &computeShaderSource, NULL);
     glCompileShader(computeShader);
 
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, computeShader);
-    glLinkProgram(shaderProgram);
-
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, outputBufferID);
 
@@ -213,7 +209,7 @@ void forward_maxpool_layer_opengl(const maxpool_layer l, network net) {
     int numWorkgroupsY = (l.out_h + workgroupSizeY - 1) / workgroupSizeY;
     int numWorkgroupsZ = l.c;
 
-    glDispatchCompute(numWorkgroupsX, numWorkgroupsY, numWorkgroupsZ);
+    glDispatchCompute(numWorkgroupsX, numWorkgroupsY, numWorkgroupsZ);  
     glUseProgram(0); // Unbind the shader program
 
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);

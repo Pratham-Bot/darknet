@@ -1,0 +1,103 @@
+#version 310 es
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) buffer BlockInput { float dataInput[]; };
+layout(std430, binding = 1) buffer BlockBiases { float dataBiases[]; };
+layout(std430, binding = 2) buffer BlockOutput { float dataOutput[]; };
+layout(std430, binding = 3) buffer BlockTruth { float dataTruth[]; };
+uniform int batchSize;
+uniform int inputSize;
+uniform int outputSize;
+uniform int coords;
+uniform int classes;
+uniform int background;
+uniform float noObjectScale;
+uniform float objectScale;
+uniform float classScale;
+uniform float backgroundScale;
+uniform float truthThreshold;
+uniform float biasMatch;
+uniform float rescore;
+
+struct Box {
+    float x, y, w, h;
+};
+
+float calculateIOU(Box a, Box b) {
+    float left = max(a.x, b.x);
+    float right = min(a.x + a.w, b.x + b.w);
+    float top = max(a.y, b.y);
+    float bottom = min(a.y + a.h, b.y + b.h);
+
+    float intersectionArea = max(0.0, right - left) * max(0.0, bottom - top);
+    float unionArea = (a.w * a.h) + (b.w * b.h) - intersectionArea;
+
+    return intersectionArea / unionArea;    
+}
+
+
+void main() {
+    int index = int(gl_GlobalInvocationID.x);
+    if (index >= batchSize) return;
+
+    int inputOffset = index * inputSize;
+
+    // Extract bounding boxes from the input data
+    Box predictionBox;
+    predictionBox.x = dataInput[inputOffset];
+    predictionBox.y = dataInput[inputOffset + 1];
+    predictionBox.w = dataInput[inputOffset + 2];
+    predictionBox.h = dataInput[inputOffset + 3];
+
+    Box truthBox;
+    truthBox.x = dataTruth[inputOffset];
+    truthBox.y = dataTruth[inputOffset + 1];
+    truthBox.w = dataTruth[inputOffset + 2];
+    truthBox.h = dataTruth[inputOffset + 3];
+
+    // Calculate IOU between the predicted box and the true box
+    float iou = calculateIOU(predictionBox, truthBox);
+
+    // class data follows the bounding box data:
+    int classOffset = inputSize / 2;
+
+    // Extract the predicted class
+    int predictedClass = int(dataInput[inputOffset + classOffset]);
+
+    // Extract the true class
+    int trueClass = int(dataTruth[inputOffset + classOffset]);
+
+        // Calculate IOU
+    if (iou > truthThreshold) {
+        // True positive case
+        l.delta[obj_index] = objectScale * (1 - l.output[obj_index]);
+        *(l.cost) -= log(l.output[obj_index]);
+       
+        if (biasMatch > 0.0) {
+            // Adjust class predictions based on biasMatch
+            for (int c = 0; c < classes; c++) {
+            int class_index = entry_index(l, b, n*w*h + j*w + i, coords + 1);
+            float target = (c == trueClass) ? 1.0 : 0.0;
+            float prediction = l.output[class_index + c];
+            float delta = biasMatch * (target - prediction);
+            l.delta[class_index + c] += delta;
+        }
+    } else {
+        // False positive case
+        
+        l.delta[obj_index] = noObjectScale * (0 - l.output[obj_index]);
+        *(l.cost) -= log(1 - l.output[obj_index]);
+        
+        if (biasMatch > 0.0) {
+            // Adjust class predictions for false positives
+            for (int c = 0; c < classes; c++) {
+            int class_index = entry_index(l, b, n*w*h + j*w + i, coords + 1);
+            float target = 0.0; // Assuming no object is detected
+            float prediction = l.output[class_index + c];
+            float delta = biasMatch * (target - prediction);
+            l.delta[class_index + c] += delta;
+            }
+        }
+           }
+        }
+}

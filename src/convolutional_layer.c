@@ -503,196 +503,201 @@ void forward_convolutional_layer(convolutional_layer l, network net)
     activate_array(l.output, l.outputs*l.batch, l.activation);
     if(l.binary || l.xnor) swap_binary(&l);
 
-}
-
-
-        
-void forward_convolutional_layer_opengl(convolutional_layer l, network net)
-{   
-
+#ifdef HAVE_OPEN_GLES
+    
     GLuint inputBufferID;
     GLuint weightBufferID;
     GLuint biasBufferID;
     GLuint outputBufferID;
 
-glGenBuffers(1, &inputBufferID);
-glGenBuffers(1, &weightBufferID);
-glGenBuffers(1, &biasBufferID);
-glGenBuffers(1, &outputBufferID);
+    glGenBuffers(1, &inputBufferID);
+    glGenBuffers(1, &weightBufferID);
+    glGenBuffers(1, &biasBufferID);
+    glGenBuffers(1, &outputBufferID);
 
-char* vertexShaderSource = LoadShaderFromFile("shader/vertex_shader.glsl");
-char* fragmentShaderSource = LoadShaderFromFile("shader/fragment_shader.glsl");
+    char* vertexShaderSource = LoadShaderFromFile("shader/vertex_shader.glsl");
+    char* fragmentShaderSource = LoadShaderFromFile("shader/fragment_shader.glsl");
 
-// Create and compile shaders
-GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    // Create and compile shaders
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
-// Vertex Shader Compilation
-glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-glCompileShader(vertexShader);
+    // Vertex Shader Compilation
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
 
-// Check for shader compilation errors
-GLint compileStatus;
-glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compileStatus);
-if (compileStatus != GL_TRUE) {
-    // Handle compilation error
-    GLint infoLogLength;
-    glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &infoLogLength);
-    char* infoLog = (char*)malloc(infoLogLength);
-    glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+    // Check for shader compilation errors
+    GLint compileStatus;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compileStatus);
+    if (compileStatus != GL_TRUE) {
+        // Handle compilation error
+        GLint infoLogLength;
+        glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
 
-    // Print or log the error message
-    printf("Vertex shader compilation error:\n%s\n", infoLog);
-    
-    // Clean up
-    free(infoLog);
-}
+        // Print or log the error message
+        printf("Vertex shader compilation error:\n%s\n", infoLog);
+        
+        // Clean up
+        free(infoLog);
+    }
 
 
-// Fragment Shader Compilation
-glShaderSource(fragmentShader, 1, & fragmentShaderSource, NULL);
-glCompileShader(fragmentShader);
+    // Fragment Shader Compilation
+    glShaderSource(fragmentShader, 1, & fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
 
-// Check for shader compilation errors
-glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compileStatus);
-if (compileStatus != GL_TRUE) {
-    // Handle compilation error
-    GLint infoLogLength;
-    glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &infoLogLength);
-    char* infoLog = (char*)malloc(infoLogLength);
-    glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-    
-    // Print or log the error message
-    printf("Fragment shader compilation error:\n%s\n", infoLog);
-    
-    // Clean up
-    free(infoLog);
+    // Check for shader compilation errors
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compileStatus);
+    if (compileStatus != GL_TRUE) {
+        // Handle compilation error
+        GLint infoLogLength;
+        glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        
+        // Print or log the error message
+        printf("Fragment shader compilation error:\n%s\n", infoLog);
+        
+        // Clean up
+        free(infoLog);
 
-}
+    }
 
-// Create shader program and attach shaders
-GLuint shaderProgram = glCreateProgram();
-glAttachShader(shaderProgram, vertexShader);
-glAttachShader(shaderProgram, fragmentShader);
+    // Create shader program and attach shaders
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
 
-// Link the program
-glLinkProgram(shaderProgram);
+    // Link the program
+    glLinkProgram(shaderProgram);
 
-// Check for program linking errors
-GLint linkStatus;
-glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatus);
-if (linkStatus != GL_TRUE) {
-    // Handle linking error
-    
-    GLint infoLogLength;
-    glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &infoLogLength);
-    char* infoLog = (char*)malloc(infoLogLength);
-    glGetProgramInfoLog(shaderProgram, infoLogLength, NULL, infoLog);
+    // Check for program linking errors
+    GLint linkStatus;
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatus);
+    if (linkStatus != GL_TRUE) {
+        // Handle linking error
+        
+        GLint infoLogLength;
+        glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetProgramInfoLog(shaderProgram, infoLogLength, NULL, infoLog);
 
-    // Print or log the error message
-    printf("Shader program linking error:\n%s\n", infoLog);
+        // Print or log the error message
+        printf("Shader program linking error:\n%s\n", infoLog);
 
-    // Clean up
-    free(infoLog);
-    
-    // You might want to delete the shader program and do further error handling
+        // Clean up
+        free(infoLog);
+        
+        // You might want to delete the shader program and do further error handling
+        glDeleteProgram(shaderProgram);
+        
+    }
+
+    // Clean up shaders (no longer needed after linking)
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+
+    // // Bind buffer objects to appropriate targets
+    glBindBuffer(GL_ARRAY_BUFFER, inputBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
+                    
+    // // Allocate memory for each buffer with the calculated sizes.
+    glBufferData(GL_ARRAY_BUFFER, inputBufferID, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, weightBufferID, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, biasBufferID, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, outputBufferID, NULL, GL_STATIC_DRAW);
+
+
+    // Bind your shader program
+    glUseProgram(shaderProgram);
+
+    const char* shaderSource = LoadShaderFromFile("shader/convolution_shader.glsl");
+    GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
+    glShaderSource(computeShader, 1, &shaderSource, NULL);
+    glCompileShader(computeShader);
+
+
+    GLuint computeProgram = glCreateProgram(); 
+    glAttachShader(computeProgram, computeShader);
+    glLinkProgram(computeProgram);
+
+    //compute shader for activation
+    const char* activationShaderSource = LoadShaderFromFile("shader/activation_compute_shader.comp");
+    GLuint activationShader = glCreateShader(GL_COMPUTE_SHADER);
+    glShaderSource(activationShader, 1, &activationShaderSource, NULL);
+    glCompileShader(activationShader);
+
+
+    GLuint activationProgram = glCreateProgram();
+    glAttachShader(activationProgram, activationShader);
+    glLinkProgram(activationProgram);
+
+    glUseProgram(activationProgram);
+
+    // Set uniform n to the number of output elements
+    // int n = l.outputs * l.batch;  // Assuming l.outputs represents the number of output elements
+    glUniform1i(glGetUniformLocation(activationShader, "n"), n);
+
+    // Bind the output buffer of the convolution as input to the activation shader
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, outputBufferID);
+
+    // Bind the buffer where you want to store the activated values
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, outputBufferID);
+
+    // Dispatch the activation shader
+    glDispatchCompute((n + 63) / 64, 1, 1);
+
+    // Synchronize the compute shader execution
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+    // Retrieve data from GPU buffers
+    GLfloat* inputData = (GLfloat*)malloc(inputBufferID); // Allocate memory for input data
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, inputBufferID);
+    GLfloat* inputBufferData = (GLfloat*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID, GL_MAP_READ_BIT);
+    memcpy(inputData, inputBufferData, inputBufferID);
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+    // Retrieve data from weight buffer
+    float* weightBufferData = (float*)malloc(weightBufferID); // Allocate memory to hold the retrieved data
+    glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, weightBufferID, weightBufferData);
+
+    // Retrieve data from bias buffer
+    float* biasBufferData = (float*)malloc(biasBufferID); // Allocate memory to hold the retrieved data
+    glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, biasBufferID, biasBufferData);
+
+    // Retrieve data from output buffer
+    float* outputBufferData = (float*)malloc(outputBufferID); // Allocate memory to hold the retrieved data
+    glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, outputBufferID, outputBufferData);
+
+    // Bind buffer objects to appropriate binding points
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID);  // Binding point 0 for inputBuffer
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, weightBufferID); // Binding point 1 for weightBuffer
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, biasBufferID);   // Binding point 2 for biasBuffer
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, outputBufferID); // Binding point 3 for outputBuffer
+
+    // Cleanup
+    glUseProgram(0); // Unbind the shader program
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // Unbind any buffer
+    glDeleteBuffers(1, &inputBufferID);
+    glDeleteBuffers(1, &weightBufferID);
+    glDeleteBuffers(1, &biasBufferID);
+    glDeleteBuffers(1, &outputBufferID);
     glDeleteProgram(shaderProgram);
-    
+
+#endif
 }
 
-// Clean up shaders (no longer needed after linking)
-glDeleteShader(vertexShader);
-glDeleteShader(fragmentShader);
 
-
-// // Bind buffer objects to appropriate targets
-glBindBuffer(GL_ARRAY_BUFFER, inputBufferID);
-glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
-glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
-glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
-                
-// // Allocate memory for each buffer with the calculated sizes.
-glBufferData(GL_ARRAY_BUFFER, inputBufferID, NULL, GL_STATIC_DRAW);
-glBufferData(GL_ARRAY_BUFFER, weightBufferID, NULL, GL_STATIC_DRAW);
-glBufferData(GL_ARRAY_BUFFER, biasBufferID, NULL, GL_STATIC_DRAW);
-glBufferData(GL_ARRAY_BUFFER, outputBufferID, NULL, GL_STATIC_DRAW);
-
-// Bind your shader program
-glUseProgram(shaderProgram);
-
-char* shaderSource = LoadShaderFromFile("shader/convolution_shader.glsl");
-GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
-glShaderSource(computeShader, 1, &shaderSource, NULL);
-glCompileShader(computeShader);
-
-GLuint shaderProgram = glCreateProgram();
-glAttachShader(shaderProgram, computeShader);
-glLinkProgram(shaderProgram);
-
-//compute shader for activation
-char* activationShaderSource = LoadShaderFromFile("shader/activation_compute_shader.comp");
-GLuint activationShader = glCreateShader(GL_COMPUTE_SHADER);
-glShaderSource(activationShader, 1, &activationShaderSource, NULL);
-glCompileShader(activationShader);
-
-glUseProgram(activationShader);
-
-// Set uniform n to the number of output elements
-int n = l.outputs * l.batch;  // Assuming l.outputs represents the number of output elements
-glUniform1i(glGetUniformLocation(activationShader, "n"), n);
-
-// Bind the output buffer of the convolution as input to the activation shader
-glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, outputBufferID);
-
-// Bind the buffer where you want to store the activated values
-glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, outputBufferID);
-
-// Dispatch the activation shader
-glDispatchCompute((n + 63) / 64, 1, 1);
-
-// Synchronize the compute shader execution
-glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-// Retrieve data from GPU buffers
-GLfloat* inputData = (GLfloat*)malloc(inputBufferID); // Allocate memory for input data
-glBindBuffer(GL_SHADER_STORAGE_BUFFER, inputBufferID);
-GLfloat* inputBufferData = (GLfloat*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID, GL_MAP_READ_BIT);
-memcpy(inputData, inputBufferData, inputBufferID);
-glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-
-// Retrieve data from weight buffer
-float* weightBufferData = (float*)malloc(weightBufferID); // Allocate memory to hold the retrieved data
-glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
-glGetBufferSubData(GL_ARRAY_BUFFER, 0, weightBufferID, weightBufferData);
-
-// Retrieve data from bias buffer
-float* biasBufferData = (float*)malloc(biasBufferID); // Allocate memory to hold the retrieved data
-glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
-glGetBufferSubData(GL_ARRAY_BUFFER, 0, biasBufferID, biasBufferData);
-
-// Retrieve data from output buffer
-float* outputBufferData = (float*)malloc(outputBufferID); // Allocate memory to hold the retrieved data
-glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
-glGetBufferSubData(GL_ARRAY_BUFFER, 0, outputBufferID, outputBufferData);
-
-// Bind buffer objects to appropriate binding points
-glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, inputBufferID);  // Binding point 0 for inputBuffer
-glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, weightBufferID); // Binding point 1 for weightBuffer
-glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, biasBufferID);   // Binding point 2 for biasBuffer
-glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, outputBufferID); // Binding point 3 for outputBuffer
-
-// Cleanup
-glUseProgram(0); // Unbind the shader program
-
-glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // Unbind any buffer
-glDeleteBuffers(1, &inputBufferID);
-glDeleteBuffers(1, &weightBufferID);
-glDeleteBuffers(1, &biasBufferID);
-glDeleteBuffers(1, &outputBufferID);
-glDeleteProgram(shaderProgram);
-
-
-}
+        
 
 
 void backward_convolutional_layer(convolutional_layer l, network net)

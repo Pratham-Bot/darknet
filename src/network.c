@@ -259,12 +259,20 @@ void forward_network(network *netp)
         if(l.truth) {
             net.truth = l.output;
         }
+
+        // if (l.type == CONVOLUTIONAL) {
+        //     // Print the output of the convolutional layer
+        //     printf("Convolutional Layer %d output:\n", i);
+        //     for (int j = 0; j < l.outputs; j++) {
+        //         printf("%f \n", l.output[j]);
+        //     }
+        //     printf("\n");
+        // }
     }
     calc_network_cost(netp);
 }
 
-void update_network(network *netp)
-{
+void update_network(network *netp){
 #ifdef GPU
     if(netp->gpu_index >= 0){
         update_network_gpu(netp);   

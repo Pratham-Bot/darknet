@@ -10,6 +10,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <GL/glew.h>
+#include <GLES2/gl2.h>
+
 layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
 {
     layer l = {0};
@@ -435,6 +438,138 @@ void get_region_detections(layer l, int w, int h, int netw, int neth, float thre
     }
     correct_region_boxes(dets, l.w*l.h*l.n, w, h, netw, neth, relative);
 }
+
+#ifdef HAVE_OPEN_GLES
+
+void forward_region_layer_opengl(const layer l, network net)
+{
+    GLuint inputBufferID;
+    GLuint weightBufferID;
+    GLuint biasBufferID;
+    GLuint truthBufferID;
+
+    glGenBuffers(1, &inputBufferID);
+    glGenBuffers(1, &weightBufferID);
+    glGenBuffers(1, &biasBufferID);
+    glGenBuffers(1, &truthBufferID);
+
+    char* vertexShaderSource = LoadShaderFromFile("shader/vertex_shader.glsl");
+    char* fragmentShaderSource = LoadShaderFromFile("shader/fragment_shader.glsl");
+
+    // Create and compile shaders
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+    // Vertex Shader Compilation
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    // Check for shader compilation errors
+    GLint compileStatus;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compileStatus);
+    if (compileStatus != GL_TRUE) {
+        // Handle compilation error
+        GLint infoLogLength;
+        glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+
+        // Print or log the error message
+        printf("Vertex shader compilation error:\n%s\n", infoLog);
+        
+        // Clean up
+        free(infoLog);
+    }
+
+
+    // Fragment Shader Compilation
+    glShaderSource(fragmentShader, 1, & fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+
+    // Check for shader compilation errors
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compileStatus);
+    if (compileStatus != GL_TRUE) {
+        // Handle compilation error
+        GLint infoLogLength;
+        glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        
+        // Print or log the error message
+        printf("Fragment shader compilation error:\n%s\n", infoLog);
+        
+        // Clean up
+        free(infoLog);
+
+    }
+
+    // Create shader program and attach shaders
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+
+    // Link the program
+    glLinkProgram(shaderProgram);
+
+    // Check for program linking errors
+    GLint linkStatus;
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatus);
+    if (linkStatus != GL_TRUE) {
+        // Handle linking error
+        
+        GLint infoLogLength;
+        glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetProgramInfoLog(shaderProgram, infoLogLength, NULL, infoLog);
+
+        // Print or log the error message
+        printf("Shader program linking error:\n%s\n", infoLog);
+
+        // Clean up
+        free(infoLog);
+        
+        // You might want to delete the shader program and do further error handling
+        glDeleteProgram(shaderProgram);
+        
+    }
+
+    // Clean up shaders (no longer needed after linking)
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+
+    // // Bind buffer objects to appropriate targets
+    glBindBuffer(GL_ARRAY_BUFFER, inputBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, weightBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, biasBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, truthBufferID);
+                    
+    // // Allocate memory for each buffer with the calculated sizes.
+    glBufferData(GL_ARRAY_BUFFER, inputBufferID, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, weightBufferID, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, biasBufferID, NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, truthBufferID, NULL, GL_STATIC_DRAW);
+
+
+    // Bind your shader program
+    glUseProgram(shaderProgram);
+
+    const char* shaderSource = LoadShaderFromFile("shader/region_layer.comp");
+    GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
+    glShaderSource(computeShader, 1, &shaderSource, NULL);
+    glCompileShader(computeShader);
+
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    
+    glUseProgram(0); // Unbind the shader program
+    glDeleteProgram(shaderProgram);
+    
+
+}
+#endif
+
+
+
 
 #ifdef GPU
 
