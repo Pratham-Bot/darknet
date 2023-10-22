@@ -6,7 +6,7 @@ This repository contains the code for Darknet, an open-source neural network fra
 
 ### On Host 
 
-1. Clone this repository
+1. Clone the [darknet](https://github.com/pjreddie/darknet) repository
 
 2. Change your current directory to the cloned repository:
 

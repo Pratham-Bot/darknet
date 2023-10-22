@@ -26,7 +26,7 @@ void main() {
     int inputX = outputIndex.x * stride;
     int inputY = outputIndex.y * stride;
 
-    float maxVal = -3.402823466e+38; // Minimum representable negative value in IEEE 754
+    float maxVal = -3.402823466e+38; // Minimum representable negative value in IEEE 
 
     for (int i = 0; i < poolSize; ++i) {
         for (int j = 0; j < poolSize; ++j) {
