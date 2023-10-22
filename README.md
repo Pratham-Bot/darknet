@@ -93,4 +93,4 @@ You can now execute Darknet on your BeagleBoard AI64:
 
 ```bash
 ./darknet detect cfg/yolov3.cfg yolov3.weights data/dog.jpg
-``
+```

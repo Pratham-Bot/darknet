@@ -21,7 +21,7 @@ uniform int outputWidth; // Width of the output feature map
 uniform int outputHeight; // Height of the output feature map
 uniform int batchSize; // Batch size
 
-void main() {
+void main() {   
     // Calculate the global index within the output feature map
     uvec3 outputIndex = gl_GlobalInvocationID;
 
