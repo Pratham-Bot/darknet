@@ -51,27 +51,46 @@ bicycle: 99%
 
 ### On Beaglebone AI-64 
 
-To run the architecture on Beaglebone AI-64, you will need to cross compile the framework for AARCH64 (since, AI-64 is a 64-bit architecture.)
+#### 1. Modify the Makefile on Your Laptop
 
-Install the gcc and g++ compilers for aarch64 architecture. Run the following command:
+On your laptop, navigate to the Darknet source code directory. Open the `Makefile` and locate the following lines:
+
+```make
+CC=gcc
+CPP=g++
 ```
-sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+Replace them with 
+
+```bash
+CC=aarch64-linux-gnu-gcc
+CPP=aarch64-linux-gnu-gcc
 ```
+These changes configure Darknet to use the aarch64-linux-gnu-gcc cross-compiler for compilation.
 
-To cross compile the framework, make the following changes in MAKEFILE:
+#### 2. Cross-Compile Darknet
 
- ```ini
-  CC=aarch64-linux-gnu-gcc
-  CP=aarch64-linux-gnu-gcc
- ``` 
-Now perform ```make``` using the following command:
+With the Makefile configured for cross-compilation, you can now compile Darknet on BeagleBoard AI64:
 
-```
+```bash
 CC=arm-linux-gnueabi-gcc make -j
 ```
-Make sure the ``darknet`` executable is for 64-bit architecture by performing:
-```file darknet```.
 
-#### Transfer darkent folder from host to BBAI-64
+#### 3. Transfer Compiled Files to BeagleBoard AI64
 
-I used scp protocol to transfer darknet on BBAI64. You can any other method to transfer file.  
+To transfer the compiled Darknet files from your laptop to BeagleBoard AI64, use the SCP (Secure Copy Protocol). Run the following command on your laptop: 
+ 
+ ```bash
+ scp /path/to/compiled/darknet beagle@beagleboard-ai64:/destination/on/beagleboard
+```
+In my case, the command is
+
+```bash 
+scp -r ./darknet debian@beaglebone.local:/home/debian
+```
+#### 4. Run Darknet on BeagleBoard AI64
+
+You can now execute Darknet on your BeagleBoard AI64:
+
+```bash
+./darknet detect cfg/yolov3.cfg yolov3.weights data/dog.jpg
+``

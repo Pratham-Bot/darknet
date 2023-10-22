@@ -1,4 +1,4 @@
-#version 310 es
+#version 460 es
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) buffer BlockInput { float dataInput[]; };
@@ -22,6 +22,17 @@ uniform float rescore;
 struct Box {
     float x, y, w, h;
 };
+
+typedef struct {
+    float *output;  
+    float *delta;   
+} layer;
+
+layer l;
+
+l.output = (float *)malloc(outputSize * sizeof(float));
+l.delta = (float *)malloc(outputSize * sizeof(float));
+
 
 float calculateIOU(Box a, Box b) {
     float left = max(a.x, b.x);

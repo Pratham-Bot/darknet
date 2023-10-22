@@ -34,7 +34,9 @@
 
 
 int calculate_num_predictions(network *net) {
+
     #ifdef HAVE_OPEN_GLES    
+    
     int total_predictions = 0;
     for (int i = 0; i < net->n; ++i) {
         layer l = net->layers[i];
@@ -45,23 +47,31 @@ int calculate_num_predictions(network *net) {
             total_predictions += num_boxes * (4 + 1 + classes); // 4 coordinates + 1 objectness + classes
         }
     }
+    
     #endif
+    
     return total_predictions;
 }
 
 int get_class_id(float prediction, int num_classes) {
     
+    
     #ifdef HAVE_OPEN_GLES
+    
     int max_index = 0;
     float max_prob = prediction;
     return max_index;
+    
     #endif
 }
 
 
 float get_confidence(float prediction, int num_classes) {
+    
     #ifdef HAVE_OPEN_GLES
+    
     float confidence = prediction;
+    
     #endif
 
 }
@@ -238,6 +248,106 @@ network *make_network(int n)
     return net;
 }
 
+#ifdef HAVE_OPEN_GLES
+
+void forward_network_opengl(network *netp) {
+    network net = *netp;
+    int i;
+
+    for (i = 0; i < net.n; ++i) {
+        net.index = i;
+        layer l = net.layers[i];
+
+        if (l.delta) {
+            fill_cpu(l.outputs * l.batch, 0, l.delta, 1);
+        }
+
+        l.forward(l, net);
+        net.input = l.output;
+
+        if (l.truth) {
+            net.truth = l.output;
+        }
+
+    char* vertexShaderSource = LoadShaderFromFile("shader/vertex_shader.glsl");
+    char* fragmentShaderSource = LoadShaderFromFile("shader/fragment_shader.glsl");
+
+    // Create and compile shaders
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+    // Vertex Shader Compilation
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    // Check for shader compilation errors
+    GLint compileStatus;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compileStatus);
+    if (compileStatus != GL_TRUE) {
+        // Handle compilation error
+        GLint infoLogLength;
+        glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+
+        // Print or log the error message
+        printf("Vertex shader compilation error:\n%s\n", infoLog);
+        
+        // Clean up
+        free(infoLog);
+    }
+          GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+
+    // Link the program
+    glLinkProgram(shaderProgram);
+
+    // Check for program linking errors
+    GLint linkStatus;
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &linkStatus);
+    if (linkStatus != GL_TRUE) {
+        // Handle linking error
+        
+        GLint infoLogLength;
+        glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &infoLogLength);
+        char* infoLog = (char*)malloc(infoLogLength);
+        glGetProgramInfoLog(shaderProgram, infoLogLength, NULL, infoLog);
+
+        // Print or log the error message
+        printf("Shader program linking error:\n%s\n", infoLog);
+
+        // Clean up
+        free(infoLog);
+        
+        // You might want to delete the shader program and do further error handling
+        glDeleteProgram(shaderProgram);
+        
+    }
+
+
+        // Print layer output using OpenGL ES
+        if (l.type == CONVOLUTIONAL ||  l.type == MAXPOOL) {
+            GLuint outputBufferID;
+            glGenBuffers(1, &outputBufferID);
+            glBindBuffer(GL_ARRAY_BUFFER, outputBufferID);
+
+            // Copy layer output data to the GPU buffer
+            glBufferData(GL_ARRAY_BUFFER, l.outputs * l.batch * sizeof(float), l.output, GL_STATIC_DRAW);
+
+            // Assuming you have shaders for rendering
+            glUseProgram(shaderProgram);
+
+            // Clean up
+            glDeleteBuffers(1, &outputBufferID);
+        }
+    }
+
+    calc_network_cost(netp);
+}
+
+#endif
+
 void forward_network(network *netp)
 {
 #ifdef GPU
@@ -260,14 +370,6 @@ void forward_network(network *netp)
             net.truth = l.output;
         }
 
-        // if (l.type == CONVOLUTIONAL) {
-        //     // Print the output of the convolutional layer
-        //     printf("Convolutional Layer %d output:\n", i);
-        //     for (int j = 0; j < l.outputs; j++) {
-        //         printf("%f \n", l.output[j]);
-        //     }
-        //     printf("\n");
-        // }
     }
     calc_network_cost(netp);
 }

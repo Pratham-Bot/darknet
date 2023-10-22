@@ -655,6 +655,27 @@ void forward_convolutional_layer(convolutional_layer l, network net)
     // Synchronize the compute shader execution
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
+    const char* fillComputeShaderSource = LoadShaderFromFile("shader/fill_compute_shader.comp");
+    const char* im2colComputeShaderSource = LoadShaderFromFile("shader/im2col.comp");
+    const char* gemmComputeShaderSource = LoadShaderFromFile("shader/gemm_compute_shader.comp");
+    const char* addBiasComputeShaderSource = LoadShaderFromFile("shader/add_bias.comp");
+
+    GLuint fillComputeShader = glCreateShader(GL_COMPUTE_SHADER);
+    GLuint im2colComputeShader = glCreateShader(GL_COMPUTE_SHADER);
+    GLuint gemmComputeShader = glCreateShader(GL_COMPUTE_SHADER);
+    GLuint addBiasComputeShader = glCreateShader(GL_COMPUTE_SHADER);
+
+    glShaderSource(fillComputeShader, 1, &fillComputeShaderSource, NULL);
+    glShaderSource(im2colComputeShader, 1, &im2colComputeShaderSource, NULL);
+    glShaderSource(gemmComputeShader, 1, &gemmComputeShaderSource, NULL);
+    glShaderSource(addBiasComputeShader, 1, &addBiasComputeShaderSource, NULL);
+
+    glCompileShader(fillComputeShader);
+    glCompileShader(im2colComputeShader);
+    glCompileShader(gemmComputeShader);
+    glCompileShader(addBiasComputeShader);
+
+
     // Retrieve data from GPU buffers
     GLfloat* inputData = (GLfloat*)malloc(inputBufferID); // Allocate memory for input data
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, inputBufferID);
